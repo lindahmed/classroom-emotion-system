@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git merge *)",
+      "Bash(grep -n 'empty_state\\\\|is.null\\(app_data$selected_lecture_id\\)' /c/Users/Linda/OneDrive/Desktop/classroom-emotion-system/app.R)",
+      "Bash(grep -n 'observeEvent\\(input$view_lecture_clicked' /c/Users/Linda/OneDrive/Desktop/classroom-emotion-system/app.R)",
+      "Bash(grep -A 2 'observeEvent\\(input$view_lecture_clicked' /c/Users/Linda/OneDrive/Desktop/classroom-emotion-system/app.R)"
+    ]
+  }
+}

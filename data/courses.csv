@@ -1,0 +1,5 @@
+"course_id","course_code","course_name","department","credit_hours"
+"C001","CS301","Artificial Intelligence","Computer Science",3
+"C002","CS302","Data Science Fundamentals","Computer Science",3
+"C003","CS401","Advanced Machine Learning","Computer Science",4
+"C004","MATH201","Statistics for Data Analysis","Mathematics",3

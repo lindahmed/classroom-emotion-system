@@ -1,0 +1,75 @@
+# RStudio Files
+.Rproj.user/
+.Rproject.user/
+*.Rproj
+.RData
+.Rhistory
+.Rapp.history
+.DS_Store
+
+# RStudio Specific
+.rstudio/
+.rstudio-project/
+rsconnect/
+packrat/
+
+# R Package Files
+*.tar.gz
+*.zip
+
+# R Shiny
+shinyapps/
+*.dcf
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Temporary Files
+*.tmp
+*.swp
+*.swo
+*~
+.#*
+
+# OS-specific
+Thumbs.db
+.DS_Store
+*.lnk
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# Python (if using reticulate in the future)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Database Files (but not mock data CSVs)
+*.db
+*.sqlite
+*.sqlite3
+
+# Build/Output
+dist/
+build/
+*.egg-info/
+
+# Credentials (never commit)
+secrets.R
+credentials.R
+api_keys.R
+config.local.R
