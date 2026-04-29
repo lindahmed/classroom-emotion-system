@@ -9,6 +9,8 @@ library(DT)
 library(htmltools)
 library(scales)
 library(shinyjs)
+library(httr)
+library(jsonlite)
 
 # Load helper functions
 source("R/generate_sample_data.R")
@@ -26,7 +28,9 @@ app_data <- reactiveValues(
   user_id = NULL,
   user_name = NULL,
   selected_week = 1,
-  selected_lecture_id = NULL
+  selected_lecture_id = NULL,
+  start_session_request = NULL,  # Add this for async API calls
+  live_face_response = NULL
 )
 
 # Hardcoded users
@@ -43,81 +47,304 @@ authenticate_user <- function(username, password) {
   NULL
 }
 
+# API configuration
+API_BASE_URL <- "http://localhost:8000"
+
+# Function to call FastAPI with timeout
+call_api <- function(endpoint, method = "GET", body = NULL) {
+  url <- paste0(API_BASE_URL, endpoint)
+  tryCatch({
+    config <- timeout(3)  # 3 second timeout
+    if (method == "POST") {
+      response <- POST(url, body = body, encode = "json", config = config)
+    } else {
+      response <- GET(url, config = config)
+    }
+    if (status_code(response) == 200) {
+      return(fromJSON(content(response, "text", encoding = "UTF-8")))
+    } else {
+      message(paste("API call failed with status:", status_code(response)))
+      return(NULL)
+    }
+  }, error = function(e) {
+    message(paste("API call error:", e$message))
+    return(NULL)
+  })
+}
+
 # ── UI ──────────────────────────────────────────────────────────────────────
 ui <- fluidPage(
   useShinyjs(),
   tags$head(
     tags$link(rel = "stylesheet", href = "custom.css"),
     tags$style(HTML("
-      body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; margin:0; }
-      .ep-navbar { background-color: #1e293b; border-bottom: 1px solid #334155;
-                   padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
-      .ep-brand  { color: #a78bfa; font-weight: 800; font-size: 1.25rem; margin-right: auto; }
-      .ep-nav-link { color: #94a3b8; background: none; border: none; cursor: pointer;
+      /* ── EduPulse AI – Theme Variables ─────────────────────────────────── */
+      /* Dark Mode (default) – black/charcoal + purple accent */
+      :root {
+        --bg: #09090b;
+        --surface: #18181b;
+        --surface-alt: #111113;
+        --text: #fafafa;
+        --muted: #a1a1aa;
+        --accent: #a78bfa;
+        --accent-strong: #8b5cf6;
+        --border: #27272a;
+        --border-strong: #a78bfa;
+        --panel-text: #a78bfa;
+        --alert-info-bg: rgba(167,139,250,0.12);
+        --alert-info-border: #8b5cf6;
+        --alert-info-text: #c4b5fd;
+        --alert-warning-bg: rgba(245,158,11,0.12);
+        --alert-warning-border: #f59e0b;
+        --alert-warning-text: #fcd34d;
+        --field-bg: #18181b;
+        --field-border: #3f3f46;
+        --datatable-head: #111113;
+        --datatable-row: #09090b;
+        --datatable-row-hover: #18181b;
+        --datatable-text: #fafafa;
+        --dataTables-input-bg: #18181b;
+        --dataTables-input-border: #3f3f46;
+        --dataTables-input-text: #fafafa;
+        --navbar-bg: #09090b;
+        --navbar-link: #a1a1aa;
+        --navbar-link-hover: #a78bfa;
+        --login-bg: #18181b;
+        --login-border: #3f3f46;
+        --login-shadow: rgba(0,0,0,0.7);
+        --login-logo: #a78bfa;
+        --shadow-card: none;
+        --shadow-soft: none;
+      }
+      /* Light Mode – applied via html[data-theme='light'] */
+      html[data-theme='light'] {
+        --bg: #f7f9fb;
+        --surface: #ffffff;
+        --surface-alt: #f2f4f6;
+        --text: #191c1e;
+        --muted: #475569;
+        --accent: #7c3aed;
+        --accent-strong: #6d28d9;
+        --border: #e2e8f0;
+        --border-strong: #7c3aed;
+        --panel-text: #7c3aed;
+        --alert-info-bg: rgba(124,58,237,0.08);
+        --alert-info-border: #8b5cf6;
+        --alert-info-text: #5b21b6;
+        --alert-warning-bg: rgba(245,158,11,0.10);
+        --alert-warning-border: #d97706;
+        --alert-warning-text: #92400e;
+        --field-bg: #ffffff;
+        --field-border: #cbd5e1;
+        --datatable-head: #f8fafc;
+        --datatable-row: #ffffff;
+        --datatable-row-hover: #f0ebff;
+        --datatable-text: #191c1e;
+        --dataTables-input-bg: #ffffff;
+        --dataTables-input-border: #cbd5e1;
+        --dataTables-input-text: #191c1e;
+        --navbar-bg: #ffffff;
+        --navbar-link: #475569;
+        --navbar-link-hover: #7c3aed;
+        --login-bg: #ffffff;
+        --login-border: #e2e8f0;
+        --login-shadow: rgba(15,23,42,0.10);
+        --login-logo: #7c3aed;
+        --shadow-card: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+        --shadow-soft: 0 4px 20px rgba(15,23,42,0.08);
+      }
+      /* Transition everything smoothly on theme change */
+      *, *::before, *::after {
+        transition: background-color 0.22s ease, border-color 0.22s ease, color 0.18s ease, box-shadow 0.22s ease;
+      }
+      body { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', sans-serif; margin:0; }
+      .ep-navbar { background-color: var(--navbar-bg); border-bottom: 1px solid var(--border);
+                   padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+                   box-shadow: var(--shadow-card); flex-wrap: wrap; }
+      .ep-brand  { color: var(--accent); font-weight: 800; font-size: 1.25rem; margin-right: auto; }
+      .ep-nav-link { color: var(--navbar-link); background: none; border: none; cursor: pointer;
                      font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;
                      transition: color 0.15s, background 0.15s; }
-      .ep-nav-link:hover { color: #a78bfa; background: rgba(139,92,246,0.1); }
-      .sidebar { background-color: #1e293b; border-right: 1px solid #334155;
+      .ep-nav-link:hover { color: var(--navbar-link-hover); background: rgba(124,58,237,0.08); }
+      .sidebar { background-color: var(--surface); border-right: 1px solid var(--border);
                  min-height: calc(100vh - 56px); padding: 1.25rem; width: 220px; flex-shrink: 0; }
-      .main-panel { background-color: #0f172a; padding: 1.5rem; flex-grow: 1; overflow-y: auto; }
-      .ep-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px;
-                 padding: 1.25rem; margin-bottom: 1rem; }
-      .ep-card-header { color: #a78bfa; font-weight: 700; font-size: 0.82rem;
+      .main-panel { background-color: var(--bg); padding: 1.5rem; flex-grow: 1; overflow-y: auto; }
+      .ep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+                 padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-card); }
+      .ep-card-header { color: var(--panel-text); font-weight: 700; font-size: 0.82rem;
                         text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.85rem; }
-      .metric-card { background: linear-gradient(135deg,#1e293b 0%,#0f172a 100%);
-                     border: 1px solid #334155; border-radius: 12px; padding: 1.1rem;
-                     margin-bottom: 0.75rem; transition: border-color 0.2s; }
-      .metric-card:hover { border-color: #8b5cf6; }
-      .metric-value { font-size: 1.8rem; font-weight: 700; color: #a78bfa; line-height: 1.1; }
-      .metric-label { font-size: 0.72rem; color: #64748b; text-transform: uppercase;
+      .metric-card { background: var(--surface);
+                     border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem;
+                     margin-bottom: 0.75rem; transition: border-color 0.2s, box-shadow 0.2s;
+                     box-shadow: var(--shadow-card); }
+      .metric-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-soft); }
+      .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+      .metric-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase;
                       letter-spacing: 0.09em; margin-top: 0.3rem; }
       .metric-icon  { font-size: 1.3rem; margin-bottom: 0.3rem; }
       .week-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; }
-      .week-btn { width:100%; background:#0f172a; border:1px solid #334155; color:#94a3b8;
+      .week-btn { width:100%; background: var(--bg); border:1px solid var(--border); color: var(--muted);
                   border-radius:7px; padding:5px 2px; font-size:0.72rem; cursor:pointer;
                   transition:all 0.18s; line-height:1.2; }
-      .week-btn:hover  { background:#334155; color:#e2e8f0; border-color:#8b5cf6; }
-      .week-btn.active { background:#8b5cf6; border-color:#8b5cf6; color:#fff; font-weight:700; }
-      .section-title { color:#a78bfa; font-size:1.4rem; font-weight:800; margin-bottom:0.2rem; }
-      .section-sub   { color:#64748b; font-size:0.88rem; margin-bottom:1.25rem; }
-      .week-info-bar { background:linear-gradient(90deg,#1e293b,#0f172a);
-                       border:1px solid #8b5cf6; border-radius:10px;
+      .week-btn:hover  { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+      .week-btn.active { background: var(--accent-strong); border-color: var(--accent-strong); color:#fff; font-weight:700; }
+      .section-title { color: var(--accent); font-size:1.4rem; font-weight:800; margin-bottom:0.2rem; }
+      .section-sub   { color: var(--muted); font-size:0.88rem; margin-bottom:1.25rem; }
+      .week-info-bar { background: var(--surface);
+                       border:1px solid var(--border-strong); border-radius:10px;
                        padding:0.65rem 1.2rem; margin-bottom:1.1rem;
-                       color:#a78bfa; font-weight:700; font-size:0.95rem; }
-      .badge-role { background:#312e81; color:#a5b4fc; padding:3px 12px;
-                   border-radius:20px; font-size:0.72rem; font-weight:700; }
-      .form-label { color:#94a3b8; font-size:0.78rem; font-weight:700; letter-spacing:0.05em; display:block; }
-      .alert-info    { background:rgba(99,102,241,0.12)!important; border:1px solid #6366f1!important;
-                       color:#a5b4fc!important; border-radius:10px; padding:0.65rem 1rem; }
-      .alert-warning { background:rgba(245,158,11,0.12)!important; border:1px solid #f59e0b!important;
-                       color:#fcd34d!important; border-radius:10px; padding:0.65rem 1rem; }
-      select.form-select, .form-control { background:#1e293b!important; border:1px solid #334155!important;
-        color:#e2e8f0!important; border-radius:8px!important; }
-      table.dataTable thead th { background:#1e293b; color:#a78bfa; border-bottom:2px solid #334155; }
-      table.dataTable tbody tr { background:#0f172a; }
-      table.dataTable tbody tr:hover { background:#1e293b!important; }
-      table.dataTable tbody td { color:#e2e8f0; border-color:#334155; }
-      .dataTables_info,.dataTables_length label,.dataTables_filter label { color:#94a3b8; }
-      .dataTables_filter input,.dataTables_length select { background:#1e293b; border:1px solid #334155;
-        color:#e2e8f0; border-radius:6px; padding:2px 8px; }
-      .paginate_button { color:#94a3b8!important; border-radius:6px!important; }
-      .paginate_button.current { background:#8b5cf6!important; color:#fff!important; border-color:#8b5cf6!important; }
-      #login_overlay { position:fixed; inset:0; background:#0f172a; display:flex;
+                       color: var(--accent); font-weight:700; font-size:0.95rem; }
+      .badge-role { background: var(--surface); color: var(--accent); padding:3px 12px;
+                   border-radius:20px; font-size:0.72rem; font-weight:700; border:1px solid var(--border); }
+      .form-label { color: var(--muted); font-size:0.78rem; font-weight:700; letter-spacing:0.05em; display:block; }
+      .alert-info    { background: var(--alert-info-bg)!important; border:1px solid var(--alert-info-border)!important;
+                       color: var(--alert-info-text)!important; border-radius:10px; padding:0.65rem 1rem; }
+      .alert-warning { background: var(--alert-warning-bg)!important; border:1px solid var(--alert-warning-border)!important;
+                       color: var(--alert-warning-text)!important; border-radius:10px; padding:0.65rem 1rem; }
+      select.form-select, .form-control { background: var(--field-bg)!important; border:1px solid var(--field-border)!important;
+        color: var(--text)!important; border-radius:8px!important; }
+      table.dataTable thead th { background: var(--datatable-head)!important; color: var(--accent); border-bottom:2px solid var(--border); }
+      table.dataTable tbody tr { background: var(--datatable-row)!important; }
+      table.dataTable tbody tr:hover { background: var(--datatable-row-hover)!important; }
+      table.dataTable tbody td { color: var(--datatable-text)!important; border-color: var(--border); }
+      .dataTables_wrapper { background: var(--surface)!important; border-radius: 12px; padding: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow-card); }
+      .dataTables_info,.dataTables_length label,.dataTables_filter label { color: var(--muted); }
+      .dataTables_filter input,.dataTables_length select { background: var(--dataTables-input-bg)!important; border:1px solid var(--dataTables-input-border)!important;
+        color: var(--dataTables-input-text)!important; border-radius:6px; padding:2px 8px; }
+      .paginate_button { color: var(--muted)!important; border-radius:6px!important; background: transparent!important; }
+      .paginate_button.current { background: var(--accent-strong)!important; color:#fff!important; border-color: var(--accent-strong)!important; }
+      #login_overlay { position:fixed; inset:0; background: var(--bg); display:flex;
                        align-items:center; justify-content:center; z-index:9999; }
-      .login-card { background:#1e293b; border:1px solid #334155; border-radius:18px;
-                    padding:2.5rem; width:100%; max-width:400px; box-shadow:0 25px 60px rgba(0,0,0,0.6); }
-      .login-logo { color:#a78bfa; font-size:1.9rem; font-weight:800; text-align:center; margin-bottom:0.2rem; }
-      .login-sub  { text-align:center; color:#64748b; font-size:0.88rem; margin-bottom:2rem; }
-      .btn-primary { background-color:#8b5cf6!important; border-color:#8b5cf6!important; }
-      .btn-primary:hover { background-color:#7c3aed!important; border-color:#7c3aed!important; }
-      .btn-outline-primary { border-color:#8b5cf6!important; color:#a78bfa!important; }
-      .btn-outline-primary:hover { background:#8b5cf6!important; color:#fff!important; }
-      hr.ep-hr { border-color:#334155; margin:0.9rem 0; }
-      h4.sub-section { color:#6366f1; font-size:1rem; font-weight:700;
+      .login-card { background: var(--login-bg); border:1px solid var(--login-border); border-radius:18px;
+                    padding:2.5rem; width:100%; max-width:400px; box-shadow:0 25px 60px var(--login-shadow); }
+      .login-logo { color: var(--login-logo); font-size:1.9rem; font-weight:800; text-align:center; margin-bottom:0.2rem; }
+      .login-sub  { text-align:center; color: var(--muted); font-size:0.88rem; margin-bottom:2rem; }
+      .btn-primary { background-color: var(--accent-strong)!important; border-color: var(--accent-strong)!important; color:#fff!important; }
+      .btn-primary:hover { background-color: var(--accent)!important; border-color: var(--accent)!important; }
+      .btn-outline-primary { border-color: var(--border)!important; color: var(--muted)!important; background: var(--surface)!important; }
+      .btn-outline-primary:hover { border-color: var(--accent)!important; color: var(--accent)!important; background: var(--surface)!important; }
+      hr.ep-hr { border-color: var(--border); margin:0.9rem 0; }
+      h4.sub-section { color: var(--accent-strong); font-size:1rem; font-weight:700;
                         margin-top:1.25rem; margin-bottom:0.75rem; }
-    "))
+      /* ── Theme Toggle Button ─────────────────────────────────────────────── */
+      #toggle_theme {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        min-width: 88px;
+        padding: 0 12px !important;
+        border-radius: 999px !important;
+        border: 1px solid var(--border) !important;
+        background: var(--surface) !important;
+        color: var(--muted) !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.18s !important;
+        white-space: nowrap;
+      }
+      #toggle_theme:hover {
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+        transform: translateY(-1px) !important;
+      }
+    ")),
+    tags$script(HTML(
+      "var cameraStream = null;\n" ,
+      "var cameraInterval = null;\n" ,
+      "var currentLectureId = null;\n" ,
+      "function startMonitorCamera(message) {\n" ,
+      "  currentLectureId = message.lecture_id;\n" ,
+      "  var video = document.getElementById('monitor_video');\n" ,
+      "  var canvas = document.getElementById('monitor_canvas');\n" ,
+      "  var status = document.getElementById('camera_status');\n" ,
+      "  if (!video || !canvas || !status) return;\n" ,
+      "  if (cameraStream) { stopMonitorCamera(); }\n" ,
+      "  status.innerText = 'Requesting camera access...';\n" ,
+      "  navigator.mediaDevices.getUserMedia({ video: true, audio: false })\n" ,
+      "    .then(function(stream) {\n" ,
+      "      cameraStream = stream;\n" ,
+      "      video.srcObject = stream;\n" ,
+      "      video.play();\n" ,
+      "      status.innerText = 'Camera active. Capturing frames to backend.';\n" ,
+      "      if (!cameraInterval) {\n" ,
+      "        cameraInterval = setInterval(sendCaptureFrame, 2500);\n" ,
+      "        sendCaptureFrame();\n" ,
+      "      }\n" ,
+      "    })\n" ,
+      "    .catch(function(err) {\n" ,
+      "      status.innerText = 'Camera unavailable: ' + err.message;\n" ,
+      "    });\n" ,
+      "}\n" ,
+      "function stopMonitorCamera() {\n" ,
+      "  if (cameraInterval) { clearInterval(cameraInterval); cameraInterval = null; }\n" ,
+      "  if (cameraStream) { cameraStream.getTracks().forEach(function(track) { track.stop(); }); cameraStream = null; }\n" ,
+      "  var status = document.getElementById('camera_status');\n      var video = document.getElementById('monitor_video');\n" ,
+      "  if (status) status.innerText = 'Camera stopped.';\n" ,
+      "  if (video) { video.pause(); video.srcObject = null; }\n" ,
+      "}\n" ,
+      "function sendCaptureFrame() {\n" ,
+      "  if (!cameraStream || !currentLectureId) return;\n" ,
+      "  var video = document.getElementById('monitor_video');\n" ,
+      "  var canvas = document.getElementById('monitor_canvas');\n" ,
+      "  var status = document.getElementById('camera_status');\n" ,
+      "  if (!video || !canvas || !status) return;\n" ,
+      "  canvas.width = video.videoWidth || 640;\n" ,
+      "  canvas.height = video.videoHeight || 480;\n" ,
+      "  var ctx = canvas.getContext('2d');\n" ,
+      "  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);\n" ,
+      "  canvas.toBlob(function(blob) {\n" ,
+      "    if (!blob) return;\n" ,
+      "    var data = new FormData();\n" ,
+      "    data.append('file', blob, 'frame.jpg');\n" ,
+      "    data.append('lecture_id', currentLectureId);\n" ,
+      "    fetch('http://localhost:8000/analyze-attendance-frame', { method: 'POST', body: data })\n" ,
+      "      .then(function(response) { return response.json(); })\n" ,
+      "      .then(function(json) {\n" ,
+      "        Shiny.setInputValue('live_face_response', JSON.stringify(json), { priority: 'event' });\n" ,
+      "        var summary = document.getElementById('face_recognition_status');\n" ,
+      "        if (summary) {\n" ,
+      "          if (json.recognized === false) {\n" ,
+      "            summary.innerHTML = '<strong>Face status:</strong> Not recognized';\n" ,
+      "          } else {\n" ,
+      "            summary.innerHTML = '<strong>Recognized:</strong> ' + json.student_name + ' (' + json.student_id + ')<br><strong>Emotion:</strong> ' + json.emotion + ' (' + Math.round(json.confidence * 100) + '%)';\n" ,
+      "          }\n" ,
+      "        }\n" ,
+      "      })\n" ,
+      "      .catch(function(err) {\n" ,
+      "        if (status) status.innerText = 'Capture failed: ' + err.message;\n" ,
+      "      });\n" ,
+      "  }, 'image/jpeg', 0.7);\n" ,
+      "}\n" ,
+      "Shiny.addCustomMessageHandler('startCamera', function(message) { startMonitorCamera(message); });\n" ,
+      "Shiny.addCustomMessageHandler('stopCamera', function(message) { stopMonitorCamera(); });\n" ,
+      "function toggleTheme() {\n" ,
+      "  var html = document.documentElement;\n" ,
+      "  var btn = document.getElementById('toggle_theme');\n" ,
+      "  if (!html || !btn) return;\n" ,
+      "  if (html.getAttribute('data-theme') === 'light') {\n" ,
+      "    html.removeAttribute('data-theme');\n" ,
+      "    html.classList.remove('light');\n" ,
+      "    document.body.classList.remove('light');\n" ,
+      "    btn.innerHTML = '&#9728;&#xFE0F; Light';\n" ,
+      "  } else {\n" ,
+      "    html.setAttribute('data-theme', 'light');\n" ,
+      "    html.classList.add('light');\n" ,
+      "    document.body.classList.add('light');\n" ,
+      "    btn.innerHTML = '&#127769; Dark';\n" ,
+      "  }\n" ,
+      "}\n" ,
+      "document.addEventListener('DOMContentLoaded', function() {\n" ,
+      "  var btn = document.getElementById('toggle_theme');\n" ,
+      "  if (btn) {\n" ,
+      "    btn.innerHTML = '&#9728;&#xFE0F; Light';\n" ,
+      "    btn.addEventListener('click', toggleTheme);\n" ,
+      "  }\n" ,
+      "});\n" ))
   ),
-
+  
   # ── Login overlay ──────────────────────────────────────────────────────────
   div(
     id = "login_overlay",
@@ -126,34 +353,34 @@ ui <- fluidPage(
       div(class = "login-logo", "⚡ EduPulse AI"),
       div(class = "login-sub",  "Classroom Emotion Detection & Analysis"),
       div(class = "mb-3",
-        tags$label("Username", class = "form-label"),
-        textInput("login_username", NULL, placeholder = "Enter username")
+          tags$label("Username", class = "form-label"),
+          textInput("login_username", NULL, placeholder = "Enter username")
       ),
       div(class = "mb-4",
-        tags$label("Password", class = "form-label"),
-        passwordInput("login_password", NULL, placeholder = "Enter password")
+          tags$label("Password", class = "form-label"),
+          passwordInput("login_password", NULL, placeholder = "Enter password")
       ),
       actionButton("login_btn", "Sign In", class = "btn btn-primary w-100",
-        style = "padding:0.6rem; font-weight:700; font-size:1rem;"
+                   style = "padding:0.6rem; font-weight:700; font-size:1rem;"
       ),
       shinyjs::hidden(
         div(id = "login_error", class = "alert alert-warning mt-3 small mb-0",
             "❌ Invalid username or password.")
       ),
       div(class = "alert alert-info mt-3 small mb-0",
-        tags$b("Demo credentials:"), br(),
-        "admin / admin123", br(),
-        "lecturer / lecturer123", br(),
-        "student / student123"
+          tags$b("Demo credentials:"), br(),
+          "admin / admin123", br(),
+          "lecturer / lecturer123", br(),
+          "student / student123"
       )
     )
   ),
-
+  
   # ── Main app (hidden until login) ──────────────────────────────────────────
   shinyjs::hidden(
     div(
       id = "main_app",
-
+      
       # Navbar
       div(
         class = "ep-navbar",
@@ -167,20 +394,21 @@ ui <- fluidPage(
         actionButton("nav_attendance", "Attendance",       class = "ep-nav-link"),
         actionButton("nav_settings",   "Settings",         class = "ep-nav-link"),
         div(class = "badge-role ms-1", textOutput("role_badge", inline = TRUE)),
+        actionButton("toggle_theme", "☀️ Light",            class = "btn btn-sm btn-outline-primary ms-1"),
         actionButton("logout_btn", "Logout",
-          class = "btn btn-sm btn-outline-primary ms-1",
-          style = "font-size:0.75rem; padding:3px 12px;"
+                     class = "btn btn-sm btn-outline-primary ms-1",
+                     style = "font-size:0.75rem; padding:3px 12px;"
         )
       ),
-
+      
       # Body
       div(
         style = "display:flex;",
-
+        
         # Sidebar
         div(
           class = "sidebar",
-
+          
           div(class = "ep-card-header mt-1", "📅 Select Week"),
           div(
             class = "week-grid",
@@ -195,148 +423,165 @@ ui <- fluidPage(
               )
             })
           ),
-
+          
           hr(class = "ep-hr"),
           div(class = "ep-card-header", " Filters"),
-
+          
           div(class = "mb-2",
-            tags$label("Course", class = "form-label"),
-            selectInput("filter_course_schedule", NULL, choices = c("All"))
+              tags$label("Course", class = "form-label"),
+              selectInput("filter_course_schedule", NULL, choices = c("All"))
           ),
           div(class = "mb-2",
-            tags$label("Group", class = "form-label"),
-            selectInput("filter_group_schedule", NULL, choices = c("All"))
+              tags$label("Group", class = "form-label"),
+              selectInput("filter_group_schedule", NULL, choices = c("All"))
           ),
           div(class = "mb-2",
-            tags$label("Group (Monitor)", class = "form-label"),
-            selectInput("filter_group", NULL, choices = c("All"))
+              tags$label("Group (Monitor)", class = "form-label"),
+              selectInput("filter_group", NULL, choices = c("All"))
           ),
-
+          
           hr(class = "ep-hr"),
           downloadButton("download_data", "⬇ Export CSV",
-            class = "btn btn-sm btn-outline-primary w-100"
+                         class = "btn btn-sm btn-outline-primary w-100"
           )
         ),
-
+        
         # Main content area
         div(
           class = "main-panel",
-
+          
           # ── Lecturer Dashboard ────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_dashboard",
             h1(class = "section-title", "📊 Lecturer Dashboard"),
             p(class = "section-sub",   "16-Week Academic Semester Overview — select a week then click a lecture to analyse it"),
-
+            
             div(class = "week-info-bar", textOutput("selected_week_display")),
-
+            
             fluidRow(
               column(3, div(class = "metric-card",
-                div(class = "metric-icon", "📚"),
-                div(class = "metric-value", textOutput("card_week_lectures")),
-                div(class = "metric-label", "Lectures This Week")
+                            div(class = "metric-icon", "📚"),
+                            div(class = "metric-value", textOutput("card_week_lectures")),
+                            div(class = "metric-label", "Lectures This Week")
               )),
               column(3, div(class = "metric-card",
-                div(class = "metric-icon", "💡"),
-                div(class = "metric-value", textOutput("card_week_engagement")),
-                div(class = "metric-label", "Avg Engagement")
+                            div(class = "metric-icon", "💡"),
+                            div(class = "metric-value", textOutput("card_week_engagement")),
+                            div(class = "metric-label", "Avg Engagement")
               )),
               column(3, div(class = "metric-card",
-                div(class = "metric-icon", "🎯"),
-                div(class = "metric-value", textOutput("card_week_focus")),
-                div(class = "metric-label", "Avg Focus")
+                            div(class = "metric-icon", "🎯"),
+                            div(class = "metric-value", textOutput("card_week_focus")),
+                            div(class = "metric-label", "Avg Focus")
               )),
               column(3, div(class = "metric-card",
-                div(class = "metric-icon", "⚠️"),
-                div(class = "metric-value", textOutput("card_week_confusion")),
-                div(class = "metric-label", "Confusion Alerts")
+                            div(class = "metric-icon", "⚠️"),
+                            div(class = "metric-value", textOutput("card_week_confusion")),
+                            div(class = "metric-label", "Confusion Alerts")
               ))
             ),
-
+            
             div(class = "ep-card",
-              div(class = "ep-card-header", "📋 Weekly Schedule"),
-              p(style = "color:#64748b; font-size:0.82rem; margin-bottom:0.75rem;",
-                "Click ▶ View to open a lecture in the Live Monitor."),
-              DTOutput("table_weekly_schedule")
+                div(class = "ep-card-header", "📋 Weekly Schedule"),
+                p(style = "color:#64748b; font-size:0.82rem; margin-bottom:0.75rem;",
+                  "Click ▶ View to open a lecture in the Live Monitor."),
+                DTOutput("table_weekly_schedule")
             )
           )),
-
+          
           # ── Live Monitor ──────────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_monitor",
             h1(class = "section-title", "🔴 Live Classroom Monitor"),
             p(class = "section-sub", "Real-time emotion detection and student engagement metrics"),
-
+            
             div(class = "alert alert-info mb-3", textOutput("selected_lecture_display")),
-
+            
+            div(class = "ep-card mb-3",
+                div(class = "ep-card-header", "🎥 Live Camera Feed"),
+                div(style = "display:flex; flex-wrap:wrap; gap:1rem;",
+                    div(style = "flex:1 1 360px; min-width:320px;",
+                        tags$video(id = "monitor_video", autoplay = NA, playsinline = NA, muted = NA,
+                                   style = "width:100%; height:auto; border-radius:12px; border:1px solid #334155; background:#000;"
+                        )
+                    ),
+                    div(style = "flex:1 1 280px; min-width:280px;",
+                        div(id = "camera_status", class = "alert alert-info", "Camera is idle. Click Start Session to begin."),
+                        div(id = "face_recognition_status", class = "alert alert-secondary", "Waiting for recognition results..."),
+                        uiOutput("live_face_summary")
+                    )
+                ),
+                tags$canvas(id = "monitor_canvas", style = "display:none;")
+            ),
+            
             fluidRow(
               column(2, div(class = "metric-card",
-                div(class = "metric-icon", "💡"),
-                div(class = "metric-value", textOutput("card_engagement")),
-                div(class = "metric-label", "Avg Engagement")
+                            div(class = "metric-icon", "💡"),
+                            div(class = "metric-value", textOutput("card_engagement")),
+                            div(class = "metric-label", "Avg Engagement")
               )),
               column(2, div(class = "metric-card",
-                div(class = "metric-icon", "🎯"),
-                div(class = "metric-value", textOutput("card_focus")),
-                div(class = "metric-label", "Avg Focus")
+                            div(class = "metric-icon", "🎯"),
+                            div(class = "metric-value", textOutput("card_focus")),
+                            div(class = "metric-label", "Avg Focus")
               )),
               column(2, div(class = "metric-card",
-                div(class = "metric-icon", "✅"),
-                div(class = "metric-value", textOutput("card_attendance")),
-                div(class = "metric-label", "Attendance")
+                            div(class = "metric-icon", "✅"),
+                            div(class = "metric-value", textOutput("card_attendance")),
+                            div(class = "metric-label", "Attendance")
               )),
               column(2, div(class = "metric-card",
-                div(class = "metric-icon", "❓"),
-                div(class = "metric-value", textOutput("card_confusion")),
-                div(class = "metric-label", "Confusion Rate")
+                            div(class = "metric-icon", "❓"),
+                            div(class = "metric-value", textOutput("card_confusion")),
+                            div(class = "metric-label", "Confusion Rate")
               )),
               column(2, div(class = "metric-card",
-                div(class = "metric-icon", "👥"),
-                div(class = "metric-value", textOutput("card_present")),
-                div(class = "metric-label", "Students Present")
+                            div(class = "metric-icon", "👥"),
+                            div(class = "metric-value", textOutput("card_present")),
+                            div(class = "metric-label", "Students Present")
               )),
               column(2, div(class = "metric-card",
-                div(class = "metric-icon", "😊"),
-                div(class = "metric-value", textOutput("card_dominant_emotion")),
-                div(class = "metric-label", "Dominant Emotion")
+                            div(class = "metric-icon", "😊"),
+                            div(class = "metric-value", textOutput("card_dominant_emotion")),
+                            div(class = "metric-label", "Dominant Emotion")
               ))
             ),
-
+            
             div(class = "ep-card",
-              div(class = "ep-card-header", "🧠 Narrative Insights"),
-              div(style = "color:#94a3b8; font-size:0.9rem;", textOutput("narrative_insights"))
+                div(class = "ep-card-header", "🧠 Narrative Insights"),
+                div(style = "color:#94a3b8; font-size:0.9rem;", textOutput("narrative_insights"))
             ),
-
+            
             fluidRow(
               column(6, div(class = "ep-card",
-                div(class = "ep-card-header", "📈 Engagement, Focus & Confusion Timeline"),
-                plotOutput("chart_timeline", height = "300px")
+                            div(class = "ep-card-header", "📈 Engagement, Focus & Confusion Timeline"),
+                            plotOutput("chart_timeline", height = "300px")
               )),
               column(6, div(class = "ep-card",
-                div(class = "ep-card-header", "🎭 Emotion Distribution"),
-                plotOutput("chart_emotions", height = "300px")
+                            div(class = "ep-card-header", "🎭 Emotion Distribution"),
+                            plotOutput("chart_emotions", height = "300px")
               ))
             )
           )),
-
+          
           # ── Report ────────────────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_report",
             h1(class = "section-title", "📄 Student Emotion Report"),
             p(class = "section-sub", "Per-student emotion analysis for the selected lecture"),
-
+            
             div(class = "ep-card mb-3",
-              div(class = "ep-card-header", "Lecture Context"),
-              fluidRow(
-                column(2, div(strong("Lecture:"),  br(), textOutput("report_lecture_name"))),
-                column(2, div(strong("Course:"),   br(), textOutput("report_course_name"))),
-                column(2, div(strong("Group:"),    br(), textOutput("report_group_name"))),
-                column(2, div(strong("Lecturer:"), br(), textOutput("report_lecturer_name"))),
-                column(2, div(strong("Date:"),     br(), textOutput("report_lecture_date"))),
-                column(2, div(strong("Time:"),     br(), textOutput("report_lecture_time")))
-              )
+                div(class = "ep-card-header", "Lecture Context"),
+                fluidRow(
+                  column(2, div(strong("Lecture:"),  br(), textOutput("report_lecture_name"))),
+                  column(2, div(strong("Course:"),   br(), textOutput("report_course_name"))),
+                  column(2, div(strong("Group:"),    br(), textOutput("report_group_name"))),
+                  column(2, div(strong("Lecturer:"), br(), textOutput("report_lecturer_name"))),
+                  column(2, div(strong("Date:"),     br(), textOutput("report_lecture_date"))),
+                  column(2, div(strong("Time:"),     br(), textOutput("report_lecture_time")))
+                )
             ),
-
+            
             fluidRow(
               column(2, div(class = "metric-card", div(class="metric-icon","👥"), div(class="metric-value", textOutput("report_total_students")),   div(class="metric-label","Total Students"))),
               column(2, div(class = "metric-card", div(class="metric-icon","✅"), div(class="metric-value", textOutput("report_present_students")), div(class="metric-label","Present"))),
@@ -345,25 +590,25 @@ ui <- fluidPage(
               column(2, div(class = "metric-card", div(class="metric-icon","🎯"), div(class="metric-value", textOutput("report_avg_focus")),        div(class="metric-label","Avg Focus"))),
               column(2, div(class = "metric-card", div(class="metric-icon","😊"), div(class="metric-value", textOutput("report_dominant_emotion")), div(class="metric-label","Dominant Emotion")))
             ),
-
+            
             div(class = "ep-card",
-              div(class = "ep-card-header", "📋 Student Report Table"),
-              DTOutput("table_report")
+                div(class = "ep-card-header", "📋 Student Report Table"),
+                DTOutput("table_report")
             )
           )),
-
+          
           # ── Graphs & Trends ───────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_graphs",
             h1(class = "section-title", "📊 Graphs & Trends"),
             p(class = "section-sub", "Detailed visualisations for lecture, student, and semester analytics"),
-
+            
             h4(class = "sub-section", "🎓 Lecture Analysis"),
             fluidRow(
               column(6, div(class = "ep-card", div(class="ep-card-header","Confusion Timeline"),  plotOutput("chart_confusion_timeline",  height="280px"))),
               column(6, div(class = "ep-card", div(class="ep-card-header","Boredom Timeline"),    plotOutput("chart_boredom_timeline",    height="280px")))
             ),
-
+            
             h4(class = "sub-section", "👤 Student Insights"),
             fluidRow(
               column(6, div(class = "ep-card", div(class="ep-card-header","Dominant Emotion by Student"),  plotOutput("chart_dominant_emotion",    height="280px"))),
@@ -373,7 +618,7 @@ ui <- fluidPage(
               column(6, div(class = "ep-card", div(class="ep-card-header","Top 10 Most Confused Students"),plotOutput("chart_confusion_ranking",   height="280px"))),
               column(6, div(class = "ep-card", div(class="ep-card-header","Engagement vs Focus"),          plotOutput("chart_engagement_focus",    height="280px")))
             ),
-
+            
             h4(class = "sub-section", "📅 Semester Trends"),
             fluidRow(
               column(6, div(class = "ep-card", div(class="ep-card-header","16-Week Engagement & Focus"),   plotOutput("chart_semester_engagement", height="280px"))),
@@ -382,18 +627,18 @@ ui <- fluidPage(
             div(class = "ep-card", div(class="ep-card-header","Course Engagement Comparison"),  plotOutput("chart_course_comparison",  height="300px")),
             div(class = "ep-card", div(class="ep-card-header","Emotion Share Heatmap — All 16 Weeks"), plotOutput("chart_emotion_heatmap", height="320px"))
           )),
-
+          
           # ── Confusion Alerts ──────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_confusion",
             h1(class = "section-title", "⚠️ Confusion Detection Spikes"),
             p(class = "section-sub", "Moments when more than 30% of students are confused"),
             div(class = "ep-card",
-              div(class = "ep-card-header", "Confusion Events"),
-              DTOutput("table_confusion_spikes")
+                div(class = "ep-card-header", "Confusion Events"),
+                DTOutput("table_confusion_spikes")
             )
           )),
-
+          
           # ── Groups ────────────────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_groups",
@@ -401,18 +646,18 @@ ui <- fluidPage(
             p(class = "section-sub", "K-means clustering based on engagement, focus, and confusion patterns"),
             uiOutput("cluster_content")
           )),
-
+          
           # ── Attendance ────────────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_attendance",
             h1(class = "section-title", "✅ Attendance & Focus"),
             p(class = "section-sub", "Student presence and focus metrics across lectures"),
             div(class = "ep-card",
-              div(class = "ep-card-header", "Attendance & Focus Data"),
-              DTOutput("table_attendance")
+                div(class = "ep-card-header", "Attendance & Focus Data"),
+                DTOutput("table_attendance")
             )
           )),
-
+          
           # ── Settings ──────────────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_settings",
@@ -420,24 +665,24 @@ ui <- fluidPage(
             p(class = "section-sub", "Application configuration and session information"),
             fluidRow(
               column(6, div(class = "ep-card",
-                div(class = "ep-card-header", "Session Information"),
-                div(class="mb-2", strong("Username:"),    br(), textOutput("info_username")),
-                div(class="mb-2", strong("Role:"),        br(), textOutput("info_role")),
-                div(class="mb-2", strong("User ID:"),     br(), textOutput("info_user_id")),
-                div(class="mb-2", strong("Name:"),        br(), textOutput("info_display_name")),
-                div(class="mb-2", strong("Selected Week:"),    br(), textOutput("info_selected_week")),
-                div(class="mb-2", strong("Selected Lecture:"), br(), textOutput("info_selected_lecture"))
+                            div(class = "ep-card-header", "Session Information"),
+                            div(class="mb-2", strong("Username:"),    br(), textOutput("info_username")),
+                            div(class="mb-2", strong("Role:"),        br(), textOutput("info_role")),
+                            div(class="mb-2", strong("User ID:"),     br(), textOutput("info_user_id")),
+                            div(class="mb-2", strong("Name:"),        br(), textOutput("info_display_name")),
+                            div(class="mb-2", strong("Selected Week:"),    br(), textOutput("info_selected_week")),
+                            div(class="mb-2", strong("Selected Lecture:"), br(), textOutput("info_selected_lecture"))
               )),
               column(6, div(class = "ep-card",
-                div(class = "ep-card-header", "About EduPulse AI"),
-                p("EduPulse AI is a classroom emotion detection and statistical analysis system."),
-                p("This is a prototype using mock CSV data."),
-                p("Version: 0.2.0 — Enhanced Semester Dashboard"),
-                p("Stack: R · Shiny · ggplot2 · DT · shinyjs")
+                            div(class = "ep-card-header", "About EduPulse AI"),
+                            p("EduPulse AI is a classroom emotion detection and statistical analysis system."),
+                            p("This is a prototype using mock CSV data."),
+                            p("Version: 0.2.0 — Enhanced Semester Dashboard"),
+                            p("Stack: R · Shiny · ggplot2 · DT · shinyjs")
               ))
             )
           ))
-
+          
         ) # end main-panel
       ) # end body flex
     ) # end main_app
@@ -446,26 +691,26 @@ ui <- fluidPage(
 
 # ── Server ──────────────────────────────────────────────────────────────────
 server <- function(input, output, session) {
-
+  
   is_logged_in <- reactiveVal(FALSE)
-
+  
   ALL_PANELS <- c("dashboard","monitor","report","graphs","confusion","groups","attendance","settings")
-
+  
   show_panel <- function(name) {
     for (p in ALL_PANELS) shinyjs::hide(paste0("panel_", p))
     shinyjs::show(paste0("panel_", name))
   }
-
+  
   # Nav links
-  observeEvent(input$nav_dashboard,  ignoreInit=TRUE, show_panel("dashboard"))
+  observeEvent(input$nav_dashboard,  ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("dashboard") })
   observeEvent(input$nav_monitor,    ignoreInit=TRUE, show_panel("monitor"))
-  observeEvent(input$nav_report,     ignoreInit=TRUE, show_panel("report"))
-  observeEvent(input$nav_graphs,     ignoreInit=TRUE, show_panel("graphs"))
-  observeEvent(input$nav_confusion,  ignoreInit=TRUE, show_panel("confusion"))
-  observeEvent(input$nav_groups,     ignoreInit=TRUE, show_panel("groups"))
-  observeEvent(input$nav_attendance, ignoreInit=TRUE, show_panel("attendance"))
-  observeEvent(input$nav_settings,   ignoreInit=TRUE, show_panel("settings"))
-
+  observeEvent(input$nav_report,     ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("report") })
+  observeEvent(input$nav_graphs,     ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("graphs") })
+  observeEvent(input$nav_confusion,  ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("confusion") })
+  observeEvent(input$nav_groups,     ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("groups") })
+  observeEvent(input$nav_attendance, ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("attendance") })
+  observeEvent(input$nav_settings,   ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("settings") })
+  
   # ── Week button active styling ────────────────────────────────────────────
   update_week_buttons <- function(selected) {
     for (w in 1:16) {
@@ -477,7 +722,7 @@ server <- function(input, output, session) {
       }
     }
   }
-
+  
   # ── WEEK SELECTION — core fix ─────────────────────────────────────────────
   # Each week button fires Shiny.setInputValue('selected_week_click', w)
   # This single observer catches all 16 buttons reliably.
@@ -488,14 +733,14 @@ server <- function(input, output, session) {
       update_week_buttons(w)
     }
   })
-
+  
   # ── Login ─────────────────────────────────────────────────────────────────
   observeEvent(input$login_btn, {
     user <- authenticate_user(
       trimws(input$login_username),
       input$login_password
     )
-
+    
     if (!is.null(user)) {
       is_logged_in(TRUE)
       app_data$user_role <- user$role
@@ -503,38 +748,39 @@ server <- function(input, output, session) {
       app_data$user_name <- user$name
       app_data$selected_week <- 1
       app_data$selected_lecture_id <- NULL
-
+      
       # Load & filter data
       app_data$all_data       <- load_emotion_data()
       app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
       raw_schedule            <- load_lecture_schedule()
       app_data$lecture_schedule <- filter_schedule_by_role(raw_schedule, user$role, user$user_id)
       app_data$semester_weeks <- load_semester_weeks()
-
+      
       # Populate selects
       updateSelectInput(session, "filter_group",
-        choices = c("All", get_groups_from_data(app_data$filtered_data)))
+                        choices = c("All", get_groups_from_data(app_data$filtered_data)))
       updateSelectInput(session, "filter_course_schedule",
-        choices = c("All", get_courses_from_data(app_data$lecture_schedule)))
+                        choices = c("All", get_courses_from_data(app_data$lecture_schedule)))
       updateSelectInput(session, "filter_group_schedule",
-        choices = c("All", get_groups_from_data(app_data$lecture_schedule)))
-
+                        choices = c("All", get_groups_from_data(app_data$lecture_schedule)))
+      
       # Switch UI
       shinyjs::hide("login_overlay")
       shinyjs::show("main_app")
       shinyjs::hide("login_error")
-
+      
       show_panel("dashboard")
       update_week_buttons(1)
-
+      
       showNotification(paste0("Welcome, ", user$name, "!"), type = "message", duration = 3)
     } else {
       shinyjs::show("login_error")
     }
   })
-
+  
   # ── Logout ────────────────────────────────────────────────────────────────
   observeEvent(input$logout_btn, {
+    session$sendCustomMessage("stopCamera", list())
     is_logged_in(FALSE)
     app_data$user_role           <- NULL
     app_data$user_id             <- NULL
@@ -542,14 +788,14 @@ server <- function(input, output, session) {
     app_data$filtered_data       <- NULL
     app_data$selected_week       <- 1
     app_data$selected_lecture_id <- NULL
-
+    
     for (p in ALL_PANELS) shinyjs::hide(paste0("panel_", p))
     shinyjs::show("login_overlay")
     shinyjs::hide("main_app")
     updateTextInput(session,     "login_username", value = "")
     updateTextInput(session,     "login_password", value = "")
   })
-
+  
   # ── View lecture from schedule ────────────────────────────────────────────
   observeEvent(input$view_lecture_clicked, {
     req(input$view_lecture_clicked)
@@ -557,37 +803,65 @@ server <- function(input, output, session) {
     show_panel("monitor")
     showNotification(paste("Viewing:", input$view_lecture_clicked), type="message", duration=2)
   })
-
+  
+  # ── Start session from schedule ────────────────────────────────────────────
+  observeEvent(input$start_session_clicked, {
+    req(input$start_session_clicked)
+    lecture_id <- input$start_session_clicked
+    app_data$start_session_request <- lecture_id  # Trigger reactive expression
+  })
+  
+  # ── Handle start session API call ─────────────────────────────────────────
+  observeEvent(app_data$start_session_request, {
+    req(app_data$start_session_request)
+    lecture_id <- app_data$start_session_request
+    app_data$start_session_request <- NULL  # Reset
+    
+    # Show loading message
+    showNotification("Starting session...", type = "message", duration = 2)
+    
+    result <- call_api(paste0("/start-session/", lecture_id), method = "POST")
+    
+    if (!is.null(result)) {
+      showNotification(paste("Session started for lecture:", lecture_id), type = "success", duration = 3)
+      app_data$selected_lecture_id <- lecture_id
+      show_panel("monitor")
+      session$sendCustomMessage("startCamera", list(lecture_id = lecture_id))
+    } else {
+      showNotification("Failed to start session. Check if FastAPI is running.", type = "error", duration = 5)
+    }
+  })
+  
   # ── Reactive: data filtered by lecture + group ────────────────────────────
   filtered_data_reactive <- reactive({
     if (!is_logged_in() || is.null(app_data$filtered_data)) return(data.frame())
     data <- app_data$filtered_data
-
+    
     lid <- app_data$selected_lecture_id
     if (!is.null(lid) && nchar(lid) > 0 && lid != "All")
       data <- data %>% filter(lecture_id == lid)
-
+    
     grp <- input$filter_group
     if (!is.null(grp) && grp != "All")
       data <- data %>% filter(group_id == grp)
-
+    
     data
   })
-
+  
   # ── Reactive: weekly schedule ─────────────────────────────────────────────
   weekly_schedule_reactive <- reactive({
     if (is.null(app_data$lecture_schedule)) return(data.frame())
     sched <- filter_schedule_by_week(app_data$lecture_schedule, app_data$selected_week)
-
+    
     cs <- input$filter_course_schedule
     if (!is.null(cs) && cs != "All") sched <- sched %>% filter(course_id == cs)
-
+    
     gs <- input$filter_group_schedule
     if (!is.null(gs) && gs != "All") sched <- sched %>% filter(group_id == gs)
-
+    
     sched
   })
-
+  
   # ── Week info bar ─────────────────────────────────────────────────────────
   output$selected_week_display <- renderText({
     weeks <- load_semester_weeks()
@@ -600,62 +874,65 @@ server <- function(input, output, session) {
       paste0("Week ", app_data$selected_week)
     }
   })
-
+  
   # ── Weekly schedule DT ────────────────────────────────────────────────────
   output$table_weekly_schedule <- renderDT({
     sched <- weekly_schedule_reactive()
     if (nrow(sched) == 0) {
       return(datatable(data.frame(Message="No lectures scheduled for this week."),
-        options=list(dom="t"), rownames=FALSE))
+                       options=list(dom="t"), rownames=FALSE))
     }
-
+    
     display <- sched %>%
       mutate(
-        View = paste0(
+        Actions = paste0(
+          '<button class="btn btn-sm btn-success" style="font-size:0.72rem;padding:2px 8px;margin-right:4px;" ',
+          'onclick="Shiny.setInputValue(\'start_session_clicked\',\'', lecture_id,
+          '\',{priority:\'event\'})">📹 Start Session</button>',
           '<button class="btn btn-sm btn-primary" style="font-size:0.72rem;padding:2px 10px;" ',
           'onclick="Shiny.setInputValue(\'view_lecture_clicked\',\'', lecture_id,
           '\',{priority:\'event\'})">▶ View</button>'
         )
       ) %>%
-      select(View, Day=day_name, Date=lecture_date, Time=start_time,
+      select(Actions, Day=day_name, Date=lecture_date, Time=start_time,
              Course=course_code, CourseName=course_name, Group=group_name,
              Room=room, Students=expected_students, Status=status)
-
+    
     datatable(display,
-      escape    = FALSE,
-      rownames  = FALSE,
-      selection = "none",
-      options   = list(
-        pageLength = 10, dom = "ltip", scrollX = TRUE,
-        columnDefs = list(list(className="dt-center", targets="_all"))
-      )
+              escape    = FALSE,
+              rownames  = FALSE,
+              selection = "none",
+              options   = list(
+                pageLength = 10, dom = "ltip", scrollX = TRUE,
+                columnDefs = list(list(className="dt-center", targets="_all"))
+              )
     )
-  })
-
+  }, server = FALSE)
+  
   # ── Dashboard week metrics ────────────────────────────────────────────────
   output$card_week_lectures <- renderText({ nrow(weekly_schedule_reactive()) })
-
+  
   output$card_week_engagement <- renderText({
     if (is.null(app_data$filtered_data)) return("—")
     d <- app_data$filtered_data %>% filter(academic_week == app_data$selected_week)
     if (nrow(d)==0) return("—")
     round(mean(d$engagement_score, na.rm=TRUE), 2)
   })
-
+  
   output$card_week_focus <- renderText({
     if (is.null(app_data$filtered_data)) return("—")
     d <- app_data$filtered_data %>% filter(academic_week == app_data$selected_week)
     if (nrow(d)==0) return("—")
     round(mean(d$focus_score, na.rm=TRUE), 2)
   })
-
+  
   output$card_week_confusion <- renderText({
     if (is.null(app_data$filtered_data)) return("0")
     d <- app_data$filtered_data %>% filter(academic_week == app_data$selected_week)
     if (nrow(d)==0) return("0")
     nrow(compute_confusion_spikes(d))
   })
-
+  
   # ── Live Monitor cards ────────────────────────────────────────────────────
   output$card_engagement <- renderText({
     m <- compute_summary_metrics(filtered_data_reactive()); round(m$avg_engagement,3)
@@ -677,11 +954,11 @@ server <- function(input, output, session) {
     if (nrow(d)==0) return("N/A")
     ec <- table(d$emotion); names(ec)[which.max(ec)]
   })
-
+  
   output$narrative_insights <- renderText({
     compute_narrative_insights(filtered_data_reactive())
   })
-
+  
   output$selected_lecture_display <- renderText({
     lid <- app_data$selected_lecture_id
     if (is.null(lid) || lid=="")
@@ -689,12 +966,34 @@ server <- function(input, output, session) {
     else
       paste0("▶  Viewing Lecture: ", lid)
   })
-
+  
+  observeEvent(input$live_face_response, {
+    req(input$live_face_response)
+    parsed <- tryCatch(fromJSON(input$live_face_response), error = function(e) NULL)
+    if (!is.null(parsed)) {
+      app_data$live_face_response <- parsed
+    }
+  })
+  
+  output$live_face_summary <- renderUI({
+    res <- app_data$live_face_response
+    if (is.null(res)) {
+      HTML('<div style="color:#94a3b8;">No frame analyzed yet.</div>')
+    } else if (identical(res$recognized, FALSE)) {
+      HTML('<div><strong>Face status:</strong> Not recognized</div>')
+    } else {
+      HTML(sprintf(
+        '<div><strong>Student:</strong> %s (%s)<br/><strong>Emotion:</strong> %s<br/><strong>Confidence:</strong> %s%%<br/><strong>Attendance:</strong> %s</div>',
+        res$student_name, res$student_id, res$emotion, round(as.numeric(res$confidence) * 100, 1), res$attendance_status
+      ))
+    }
+  })
+  
   # ── Charts (dark theme helper) ────────────────────────────────────────────
   dark_plot <- function(expr, bg = "#0f172a") {
     renderPlot({ expr }, bg = bg)
   }
-
+  
   output$chart_timeline          <- renderPlot({ render_engagement_timeline(filtered_data_reactive()) },             bg="#0f172a")
   output$chart_emotions          <- renderPlot({ render_emotion_distribution(filtered_data_reactive()) },            bg="#0f172a")
   output$chart_confusion_timeline<- renderPlot({ render_confusion_timeline(filtered_data_reactive()) },             bg="#0f172a")
@@ -706,27 +1005,27 @@ server <- function(input, output, session) {
   output$chart_semester_engagement<-renderPlot({ render_semester_engagement_trend(app_data$filtered_data) },        bg="#0f172a")
   output$chart_semester_confusion <- renderPlot({ render_semester_confusion_trend(app_data$filtered_data) },        bg="#0f172a")
   output$chart_course_comparison  <- renderPlot({ render_course_engagement_comparison(app_data$filtered_data) },    bg="#0f172a")
-
+  
   # ── Emotion heatmap (new) ─────────────────────────────────────────────────
   output$chart_emotion_heatmap <- renderPlot({
     d <- app_data$filtered_data
     if (is.null(d) || nrow(d)==0) {
       return(ggplot() +
-        theme(plot.background=element_rect(fill="#0f172a",colour=NA),
-              panel.background=element_rect(fill="#0f172a",colour=NA)) +
-        annotate("text",x=0.5,y=0.5,label="No data",colour="#64748b",size=6))
+               theme(plot.background=element_rect(fill="#0f172a",colour=NA),
+                     panel.background=element_rect(fill="#0f172a",colour=NA)) +
+               annotate("text",x=0.5,y=0.5,label="No data",colour="#64748b",size=6))
     }
-
+    
     hm <- d %>%
       group_by(academic_week, emotion) %>%
       summarise(count=n(), .groups="drop") %>%
       group_by(academic_week) %>%
       mutate(pct=count/sum(count)) %>%
       ungroup()
-
+    
     emotion_order <- c("Happy","Neutral","Confused","Bored")
     hm$emotion <- factor(hm$emotion, levels=rev(emotion_order))
-
+    
     ggplot(hm, aes(x=academic_week, y=emotion, fill=pct)) +
       geom_tile(colour="#0f172a", linewidth=0.6) +
       geom_text(aes(label=scales::percent(pct,accuracy=1)),
@@ -753,14 +1052,14 @@ server <- function(input, output, session) {
         plot.margin      = margin(10,10,10,10)
       )
   }, bg="#0f172a")
-
+  
   # ── Confusion spikes table ────────────────────────────────────────────────
   output$table_confusion_spikes <- renderDT({
     spikes <- compute_confusion_spikes(filtered_data_reactive())
     if (nrow(spikes)==0) spikes <- data.frame(Message="No confusion spikes detected.")
     datatable(spikes, options=list(pageLength=10,scrollX=TRUE), rownames=FALSE, selection="none")
   })
-
+  
   # ── Report ────────────────────────────────────────────────────────────────
   output$report_lecture_name <- renderText({
     lid <- app_data$selected_lecture_id
@@ -793,29 +1092,29 @@ server <- function(input, output, session) {
     s <- app_data$lecture_schedule %>% filter(lecture_id==lid)
     if (nrow(s)==0) "" else paste0(s$start_time[1]," – ",s$end_time[1])
   })
-
+  
   report_summary_reactive <- reactive({
     if (is.null(app_data$selected_lecture_id)) return(NULL)
     calculate_lecture_summary(app_data$all_data, app_data$selected_lecture_id)
   })
-
+  
   output$report_total_students   <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else s$total_students })
   output$report_present_students <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else round(s$present_students,0) })
   output$report_absent_students  <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else s$absent_students })
   output$report_avg_engagement   <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else round(s$avg_engagement,3) })
   output$report_avg_focus        <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else round(s$avg_focus,3) })
   output$report_dominant_emotion <- renderText({ s<-report_summary_reactive(); if(is.null(s))"N/A" else s$dominant_emotion })
-
+  
   output$table_report <- renderDT({
     lid <- app_data$selected_lecture_id
     if (is.null(lid)||lid=="") {
       return(datatable(data.frame(Message="Select a lecture to view the student report."),
-        options=list(dom="t"), rownames=FALSE))
+                       options=list(dom="t"), rownames=FALSE))
     }
     report <- calculate_lecture_report(app_data$all_data, lid)
     if (nrow(report)==0) {
       return(datatable(data.frame(Message="No data for this lecture."),
-        options=list(dom="t"), rownames=FALSE))
+                       options=list(dom="t"), rownames=FALSE))
     }
     disp <- report %>% select(
       student_id, student_name, attendance_status,
@@ -825,28 +1124,28 @@ server <- function(input, output, session) {
     )
     datatable(disp, options=list(pageLength=15,scrollX=TRUE), rownames=FALSE, selection="none")
   })
-
+  
   # ── Clustering ────────────────────────────────────────────────────────────
   output$cluster_content <- renderUI({
     if (isTRUE(app_data$user_role=="Student")) {
       div(div(class="ep-card",
-        div(class="ep-card-header","Your Cluster Profile"),
-        textOutput("student_cluster_message")
+              div(class="ep-card-header","Your Cluster Profile"),
+              textOutput("student_cluster_message")
       ))
     } else {
       list(
         div(class="ep-card",
-          div(class="ep-card-header","Student Cluster Assignments"),
-          DTOutput("table_clusters")
+            div(class="ep-card-header","Student Cluster Assignments"),
+            DTOutput("table_clusters")
         ),
         div(class="ep-card mt-3",
-          div(class="ep-card-header","Raw Data"),
-          DTOutput("table_raw_data")
+            div(class="ep-card-header","Raw Data"),
+            DTOutput("table_raw_data")
         )
       )
     }
   })
-
+  
   output$table_clusters <- renderDT({
     cr <- perform_clustering(filtered_data_reactive())
     if (!is.null(cr$clusters)) {
@@ -856,10 +1155,10 @@ server <- function(input, output, session) {
       datatable(cl, options=list(pageLength=10), rownames=FALSE, selection="none")
     } else {
       datatable(data.frame(Message="Insufficient data for clustering."),
-        options=list(dom="t"), rownames=FALSE)
+                options=list(dom="t"), rownames=FALSE)
     }
   })
-
+  
   output$student_cluster_message <- renderText({
     cr <- perform_clustering(filtered_data_reactive())
     if (!is.null(cr$clusters)) {
@@ -868,18 +1167,18 @@ server <- function(input, output, session) {
       else "Cluster information not available."
     } else "Clustering analysis not available."
   })
-
+  
   output$table_raw_data <- renderDT({
     d <- filtered_data_reactive()
     if (nrow(d)>0) {
       disp <- d %>% select(record_id,student_id,student_name,lecture_id,
-                            timestamp,emotion,engagement_score,focus_score,is_present,group_id)
+                           timestamp,emotion,engagement_score,focus_score,is_present,group_id)
       datatable(disp, options=list(pageLength=10), rownames=FALSE, selection="none")
     } else {
       datatable(data.frame(Message="No data."), options=list(dom="t"), rownames=FALSE)
     }
   })
-
+  
   # ── Attendance ────────────────────────────────────────────────────────────
   output$table_attendance <- renderDT({
     d <- filtered_data_reactive()
@@ -893,7 +1192,7 @@ server <- function(input, output, session) {
       datatable(data.frame(Message="No data."), options=list(dom="t"), rownames=FALSE)
     }
   })
-
+  
   # ── Settings ──────────────────────────────────────────────────────────────
   output$role_badge       <- renderText({ if(is_logged_in()) app_data$user_role else "" })
   output$info_username    <- renderText({
@@ -912,7 +1211,7 @@ server <- function(input, output, session) {
     lid <- app_data$selected_lecture_id
     if(is.null(lid)||lid=="") "None" else lid
   })
-
+  
   # ── CSV export ────────────────────────────────────────────────────────────
   output$download_data <- downloadHandler(
     filename = function() paste0("edupulse_export_",format(Sys.time(),"%Y%m%d_%H%M%S"),".csv"),

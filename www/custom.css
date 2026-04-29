@@ -1434,3 +1434,363 @@ html[data-theme='light'] .action-fab { color: #ffffff !important; }
   padding-top: 22px !important;
   border-top: 1px solid var(--border) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EduPulse AI — Light / Dark Theme Additions
+   Targets: html[data-theme='light'] applied by toggleTheme() in app.R
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Smooth theme transition on all elements */
+*, *::before, *::after {
+  transition: background-color 0.22s ease, border-color 0.22s ease,
+              color 0.18s ease, box-shadow 0.22s ease;
+}
+/* But don't animate SVG paints or transforms (would break charts) */
+svg *, canvas { transition: none !important; }
+
+/* ── app-level backgrounds ─────────────────────────────────────────────── */
+html[data-theme='light'] body,
+html[data-theme='light'] .wrapper,
+html[data-theme='light'] .content-wrapper,
+html[data-theme='light'] .right-side,
+html[data-theme='light'] .main-panel,
+html[data-theme='light'] .main-content,
+html[data-theme='light'] .container-fluid,
+html[data-theme='light'] section.content,
+html[data-theme='light'] main {
+  background: #f7f9fb !important;
+  color: #191c1e !important;
+}
+
+/* ── Navbar / topbar (ep-navbar class used by this app) ────────────────── */
+html[data-theme='light'] .ep-navbar {
+  background-color: #ffffff !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;
+}
+
+html[data-theme='light'] .ep-brand {
+  color: #7c3aed !important;
+}
+
+html[data-theme='light'] .ep-nav-link {
+  color: #475569 !important;
+}
+
+html[data-theme='light'] .ep-nav-link:hover {
+  color: #7c3aed !important;
+  background: rgba(124,58,237,0.08) !important;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+html[data-theme='light'] .sidebar {
+  background-color: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  box-shadow: 1px 0 0 #e2e8f0 !important;
+}
+
+html[data-theme='light'] .ep-card-header {
+  color: #7c3aed !important;
+}
+
+html[data-theme='light'] .week-btn {
+  background: #f7f9fb !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .week-btn:hover {
+  background: #ffffff !important;
+  color: #191c1e !important;
+  border-color: #7c3aed !important;
+}
+
+html[data-theme='light'] .week-btn.active {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+/* ── Main panel ────────────────────────────────────────────────────────── */
+html[data-theme='light'] .main-panel {
+  background-color: #f7f9fb !important;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+html[data-theme='light'] .ep-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04) !important;
+}
+
+html[data-theme='light'] .ep-card:hover {
+  box-shadow: 0 4px 20px rgba(15,23,42,0.08) !important;
+  border-color: #c7b2f7 !important;
+}
+
+/* ── Metric cards ──────────────────────────────────────────────────────── */
+html[data-theme='light'] .metric-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;
+}
+
+html[data-theme='light'] .metric-card:hover {
+  border-color: #7c3aed !important;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.10) !important;
+}
+
+html[data-theme='light'] .metric-value {
+  color: #7c3aed !important;
+}
+
+html[data-theme='light'] .metric-label {
+  color: #64748b !important;
+}
+
+/* ── Section titles ────────────────────────────────────────────────────── */
+html[data-theme='light'] .section-title {
+  color: #7c3aed !important;
+}
+
+html[data-theme='light'] .section-sub {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .week-info-bar {
+  background: #ffffff !important;
+  border-color: #c4b5fd !important;
+  color: #7c3aed !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;
+}
+
+/* ── Role badge ────────────────────────────────────────────────────────── */
+html[data-theme='light'] .badge-role {
+  background: #f0ebff !important;
+  color: #7c3aed !important;
+  border-color: #c4b5fd !important;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+html[data-theme='light'] .btn-primary {
+  background-color: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='light'] .btn-primary:hover {
+  background-color: #6d28d9 !important;
+  border-color: #6d28d9 !important;
+}
+
+html[data-theme='light'] #toggle_theme {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+html[data-theme='light'] #toggle_theme:hover {
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
+}
+
+/* ── Login page ────────────────────────────────────────────────────────── */
+html[data-theme='light'] #login_overlay {
+  background: #f7f9fb !important;
+}
+
+html[data-theme='light'] .login-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 60px rgba(15,23,42,0.10) !important;
+}
+
+html[data-theme='light'] .login-logo {
+  color: #7c3aed !important;
+}
+
+html[data-theme='light'] .login-sub {
+  color: #64748b !important;
+}
+
+/* ── Forms / inputs ────────────────────────────────────────────────────── */
+html[data-theme='light'] .form-control,
+html[data-theme='light'] .form-select,
+html[data-theme='light'] select.form-select {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #191c1e !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04) !important;
+}
+
+html[data-theme='light'] .form-control:focus,
+html[data-theme='light'] .form-select:focus {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.12) !important;
+}
+
+html[data-theme='light'] .form-label,
+html[data-theme='light'] label {
+  color: #475569 !important;
+}
+
+/* ── Tables (DataTables) ───────────────────────────────────────────────── */
+html[data-theme='light'] .dataTables_wrapper {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;
+}
+
+html[data-theme='light'] table.dataTable thead th {
+  background: #f8fafc !important;
+  color: #7c3aed !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+html[data-theme='light'] table.dataTable tbody tr {
+  background: #ffffff !important;
+}
+
+html[data-theme='light'] table.dataTable tbody tr:hover {
+  background: #f0ebff !important;
+}
+
+html[data-theme='light'] table.dataTable tbody td {
+  color: #191c1e !important;
+  border-color: #f1f5f9 !important;
+}
+
+html[data-theme='light'] .dataTables_info,
+html[data-theme='light'] .dataTables_length label,
+html[data-theme='light'] .dataTables_filter label {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .dataTables_filter input,
+html[data-theme='light'] .dataTables_length select {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #191c1e !important;
+}
+
+html[data-theme='light'] .paginate_button {
+  color: #64748b !important;
+  background: transparent !important;
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme='light'] .paginate_button.current,
+html[data-theme='light'] .paginate_button.current:hover {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+/* ── Chart containers (the wrapper divs, not the SVG internals) ─────────── */
+html[data-theme='light'] .shiny-plot-output,
+html[data-theme='light'] .plot-container,
+html[data-theme='light'] .chart-container {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;
+}
+
+/* ── Alerts ────────────────────────────────────────────────────────────── */
+html[data-theme='light'] .alert-info {
+  background: rgba(124,58,237,0.07) !important;
+  border-color: #8b5cf6 !important;
+  color: #5b21b6 !important;
+}
+
+html[data-theme='light'] .alert-warning {
+  background: rgba(245,158,11,0.10) !important;
+  border-color: #d97706 !important;
+  color: #92400e !important;
+}
+
+/* ── Headings / text ───────────────────────────────────────────────────── */
+html[data-theme='light'] h1,
+html[data-theme='light'] h2,
+html[data-theme='light'] h3,
+html[data-theme='light'] h4,
+html[data-theme='light'] h5,
+html[data-theme='light'] h6,
+html[data-theme='light'] .sub-section {
+  color: #191c1e !important;
+}
+
+html[data-theme='light'] h4.sub-section {
+  color: #7c3aed !important;
+}
+
+html[data-theme='light'] .text-muted,
+html[data-theme='light'] small {
+  color: #64748b !important;
+}
+
+/* ── HR dividers ───────────────────────────────────────────────────────── */
+html[data-theme='light'] hr.ep-hr {
+  border-color: #e2e8f0 !important;
+}
+
+/* ── Logout / outline buttons in light mode ────────────────────────────── */
+html[data-theme='light'] .btn-outline-primary {
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+  background: #ffffff !important;
+}
+
+html[data-theme='light'] .btn-outline-primary:hover {
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
+  background: #f0ebff !important;
+}
+
+/* ── Scrollbars in light mode ──────────────────────────────────────────── */
+html[data-theme='light'] ::-webkit-scrollbar-track {
+  background: #f7f9fb !important;
+}
+
+html[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+html[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+/* ── Empty-state / narrative boxes ────────────────────────────────────── */
+html[data-theme='light'] .narrative-box,
+html[data-theme='light'] .settings-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;
+}
+
+/* ── Modal ─────────────────────────────────────────────────────────────── */
+html[data-theme='light'] .modal-content {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 60px rgba(15,23,42,0.15) !important;
+}
+
+html[data-theme='light'] .modal-header {
+  background: #f8fafc !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+/* ── Tab navigation ────────────────────────────────────────────────────── */
+html[data-theme='light'] .nav-tabs {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+html[data-theme='light'] .nav-tabs .nav-link {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .nav-tabs .nav-link.active,
+html[data-theme='light'] .nav-tabs > li.active > a {
+  color: #7c3aed !important;
+  border-bottom-color: #7c3aed !important;
+}
