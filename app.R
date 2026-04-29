@@ -350,7 +350,7 @@ ui <- fluidPage(
     id = "login_overlay",
     div(
       class = "login-card",
-      div(class = "login-logo", "⚡ EduPulse AI"),
+      div(class = "login-logo", "LogIn"),
       div(class = "login-sub",  "Classroom Emotion Detection & Analysis"),
       div(class = "mb-3",
           tags$label("Username", class = "form-label"),
