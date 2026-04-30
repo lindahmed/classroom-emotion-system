@@ -73,3 +73,6 @@ secrets.R
 credentials.R
 api_keys.R
 config.local.R
+
+.R/
+.deepface/
