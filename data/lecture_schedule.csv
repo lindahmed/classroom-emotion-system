@@ -1,257 +1,257 @@
-"lecture_id","lecture_name","semester_id","academic_week","lecture_date","day_name","start_time","end_time","course_id","course_code","course_name","group_id","group_name","lecturer_id","lecturer_name","room","expected_students","status"
-"L001","CS301 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L002","CS301 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L003","CS301 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L004","CS301 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L005","CS302 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L006","CS302 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L007","CS302 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L008","CS302 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L009","CS401 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"analyzed"
-"L010","CS401 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"analyzed"
-"L011","MATH201 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"analyzed"
-"L012","MATH201 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"analyzed"
-"L013","CS301 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 401",20,"analyzed"
-"L014","CS301 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"analyzed"
-"L015","CS302 Lecture 1 - Part A","SPRING2026",1,2026-02-09,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L016","CS302 Lecture 1 - Part B","SPRING2026",1,2026-02-11,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L017","CS301 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L018","CS301 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L019","CS301 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L020","CS301 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L021","CS302 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 401",20,"analyzed"
-"L022","CS302 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 401",20,"analyzed"
-"L023","CS302 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L024","CS302 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L025","CS401 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"analyzed"
-"L026","CS401 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"analyzed"
-"L027","MATH201 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"analyzed"
-"L028","MATH201 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"analyzed"
-"L029","CS301 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L030","CS301 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L031","CS302 Lecture 2 - Part A","SPRING2026",2,2026-02-16,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"analyzed"
-"L032","CS302 Lecture 2 - Part B","SPRING2026",2,2026-02-18,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"analyzed"
-"L033","CS301 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L034","CS301 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L035","CS301 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 401",20,"analyzed"
-"L036","CS301 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L037","CS302 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L038","CS302 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L039","CS302 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L040","CS302 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L041","CS401 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"analyzed"
-"L042","CS401 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"analyzed"
-"L043","MATH201 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"analyzed"
-"L044","MATH201 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"analyzed"
-"L045","CS301 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"analyzed"
-"L046","CS301 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"analyzed"
-"L047","CS302 Lecture 3 - Part A","SPRING2026",3,2026-02-23,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"analyzed"
-"L048","CS302 Lecture 3 - Part B","SPRING2026",3,2026-02-25,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"analyzed"
-"L049","CS301 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L050","CS301 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L051","CS301 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L052","CS301 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L053","CS302 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L054","CS302 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L055","CS302 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L056","CS302 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L057","CS401 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"analyzed"
-"L058","CS401 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"analyzed"
-"L059","MATH201 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"analyzed"
-"L060","MATH201 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"analyzed"
-"L061","CS301 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L062","CS301 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 305",20,"analyzed"
-"L063","CS302 Lecture 4 - Part A","SPRING2026",4,2026-03-02,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"analyzed"
-"L064","CS302 Lecture 4 - Part B","SPRING2026",4,2026-03-04,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"analyzed"
-"L065","CS301 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L066","CS301 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L067","CS301 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 501",20,"analyzed"
-"L068","CS301 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 401",20,"analyzed"
-"L069","CS302 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L070","CS302 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"analyzed"
-"L071","CS302 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"analyzed"
-"L072","CS302 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 401",20,"analyzed"
-"L073","CS401 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"analyzed"
-"L074","CS401 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"analyzed"
-"L075","MATH201 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"analyzed"
-"L076","MATH201 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"analyzed"
-"L077","CS301 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L078","CS301 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L079","CS302 Lecture 5 - Part A","SPRING2026",5,2026-03-09,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"analyzed"
-"L080","CS302 Lecture 5 - Part B","SPRING2026",5,2026-03-11,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 401",20,"analyzed"
-"L081","CS301 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L082","CS301 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L083","CS301 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L084","CS301 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L085","CS302 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L086","CS302 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L087","CS302 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L088","CS302 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L089","CS401 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"scheduled"
-"L090","CS401 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"scheduled"
-"L091","MATH201 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L092","MATH201 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"scheduled"
-"L093","CS301 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L094","CS301 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L095","CS302 Lecture 6 - Part A","SPRING2026",6,2026-03-16,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L096","CS302 Lecture 6 - Part B","SPRING2026",6,2026-03-18,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L097","CS301 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L098","CS301 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L099","CS301 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L100","CS301 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L101","CS302 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L102","CS302 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L103","CS302 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L104","CS302 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L105","CS401 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"scheduled"
-"L106","CS401 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"scheduled"
-"L107","MATH201 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"scheduled"
-"L108","MATH201 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"scheduled"
-"L109","CS301 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L110","CS301 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L111","CS302 Lecture 7 - Part A","SPRING2026",7,2026-03-23,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L112","CS302 Lecture 7 - Part B","SPRING2026",7,2026-03-25,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L113","CS301 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L114","CS301 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L115","CS301 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L116","CS301 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L117","CS302 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L118","CS302 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L119","CS302 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L120","CS302 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L121","CS401 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"scheduled"
-"L122","CS401 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"scheduled"
-"L123","MATH201 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"scheduled"
-"L124","MATH201 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"scheduled"
-"L125","CS301 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L126","CS301 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L127","CS302 Lecture 8 - Part A","SPRING2026",8,2026-03-30,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L128","CS302 Lecture 8 - Part B","SPRING2026",8,2026-04-01,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L129","CS301 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L130","CS301 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L131","CS301 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L132","CS301 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L133","CS302 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L134","CS302 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L135","CS302 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L136","CS302 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L137","CS401 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"scheduled"
-"L138","CS401 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"scheduled"
-"L139","MATH201 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"scheduled"
-"L140","MATH201 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"scheduled"
-"L141","CS301 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L142","CS301 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L143","CS302 Lecture 9 - Part A","SPRING2026",9,2026-04-06,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L144","CS302 Lecture 9 - Part B","SPRING2026",9,2026-04-08,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L145","CS301 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L146","CS301 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L147","CS301 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L148","CS301 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L149","CS302 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L150","CS302 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L151","CS302 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L152","CS302 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L153","CS401 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"scheduled"
-"L154","CS401 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"scheduled"
-"L155","MATH201 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L156","MATH201 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L157","CS301 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L158","CS301 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L159","CS302 Lecture 10 - Part A","SPRING2026",10,2026-04-13,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L160","CS302 Lecture 10 - Part B","SPRING2026",10,2026-04-15,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L161","CS301 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L162","CS301 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L163","CS301 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L164","CS301 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L165","CS302 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L166","CS302 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L167","CS302 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L168","CS302 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L169","CS401 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"scheduled"
-"L170","CS401 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"scheduled"
-"L171","MATH201 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"scheduled"
-"L172","MATH201 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L173","CS301 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L174","CS301 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L175","CS302 Lecture 11 - Part A","SPRING2026",11,2026-04-20,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L176","CS302 Lecture 11 - Part B","SPRING2026",11,2026-04-22,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L177","CS301 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L178","CS301 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L179","CS301 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L180","CS301 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L181","CS302 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L182","CS302 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L183","CS302 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L184","CS302 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L185","CS401 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"scheduled"
-"L186","CS401 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"scheduled"
-"L187","MATH201 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"scheduled"
-"L188","MATH201 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"scheduled"
-"L189","CS301 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L190","CS301 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L191","CS302 Lecture 12 - Part A","SPRING2026",12,2026-04-27,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L192","CS302 Lecture 12 - Part B","SPRING2026",12,2026-04-29,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L193","CS301 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L194","CS301 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L195","CS301 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L196","CS301 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L197","CS302 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L198","CS302 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L199","CS302 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L200","CS302 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L201","CS401 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"scheduled"
-"L202","CS401 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"scheduled"
-"L203","MATH201 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L204","MATH201 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 501",20,"scheduled"
-"L205","CS301 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L206","CS301 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L207","CS302 Lecture 13 - Part A","SPRING2026",13,2026-05-04,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L208","CS302 Lecture 13 - Part B","SPRING2026",13,2026-05-06,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L209","CS301 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L210","CS301 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L211","CS301 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L212","CS301 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L213","CS302 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L214","CS302 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L215","CS302 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L216","CS302 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L217","CS401 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 501",20,"scheduled"
-"L218","CS401 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"scheduled"
-"L219","MATH201 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L220","MATH201 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"scheduled"
-"L221","CS301 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L222","CS301 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L223","CS302 Lecture 14 - Part A","SPRING2026",14,2026-05-11,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L224","CS302 Lecture 14 - Part B","SPRING2026",14,2026-05-13,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L225","CS301 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L226","CS301 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L227","CS301 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L228","CS301 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L229","CS302 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L230","CS302 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L231","CS302 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L232","CS302 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L233","CS401 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 305",20,"scheduled"
-"L234","CS401 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 401",20,"scheduled"
-"L235","MATH201 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 401",20,"scheduled"
-"L236","MATH201 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L237","CS301 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L238","CS301 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L239","CS302 Lecture 15 - Part A","SPRING2026",15,2026-05-18,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L240","CS302 Lecture 15 - Part B","SPRING2026",15,2026-05-20,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
-"L241","CS301 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 204",20,"scheduled"
-"L242","CS301 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L243","CS301 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L244","CS301 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G02","Group B","T01","Dr. Ahmed","Room 305",20,"scheduled"
-"L245","CS302 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L246","CS302 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L247","CS302 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 501",20,"scheduled"
-"L248","CS302 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G04","Group B","T01","Dr. Ahmed","Room 401",20,"scheduled"
-"L249","CS401 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"scheduled"
-"L250","CS401 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C003","CS401","Advanced Machine Learning","G05","Group A","T02","Dr. Smith","Room 204",20,"scheduled"
-"L251","MATH201 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 204",20,"scheduled"
-"L252","MATH201 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C004","MATH201","Statistics for Data Analysis","G06","Group B","T02","Dr. Smith","Room 305",20,"scheduled"
-"L253","CS301 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 204",20,"scheduled"
-"L254","CS301 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C001","CS301","Artificial Intelligence","G01","Group A","T03","Dr. Johnson","Room 401",20,"scheduled"
-"L255","CS302 Lecture 16 - Part A","SPRING2026",16,2026-05-25,"Monday","10:00","11:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 305",20,"scheduled"
-"L256","CS302 Lecture 16 - Part B","SPRING2026",16,2026-05-27,"Wednesday","14:00","15:00","C002","CS302","Data Science Fundamentals","G03","Group A","T03","Dr. Johnson","Room 501",20,"scheduled"
+lecture_id,lecture_id_str,lecture_name,semester_id,academic_week,lecture_date,day_name,start_time,end_time,lecture_status,course_id,course_code,course_name,group_id,group_code,group_name,lecturer_id,lecturer_id_str,lecturer_name,room,expected_students
+1,L001,CS301 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+2,L002,CS301 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+3,L003,CS301 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 204,20
+4,L004,CS301 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 204,20
+5,L005,CS302 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+6,L006,CS302 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+7,L007,CS302 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+8,L008,CS302 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+9,L009,CS401 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+10,L010,CS401 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+11,L011,MATH201 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+12,L012,MATH201 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+13,L013,CS301 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 401,20
+14,L014,CS301 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+15,L015,CS302 Lecture 1 - Part A,SPRING2026,1,2026-02-09,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+16,L016,CS302 Lecture 1 - Part B,SPRING2026,1,2026-02-11,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+17,L017,CS301 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+18,L018,CS301 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+19,L019,CS301 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+20,L020,CS301 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+21,L021,CS302 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 401,20
+22,L022,CS302 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 401,20
+23,L023,CS302 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 204,20
+24,L024,CS302 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 204,20
+25,L025,CS401 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+26,L026,CS401 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+27,L027,MATH201 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+28,L028,MATH201 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+29,L029,CS301 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+30,L030,CS301 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+31,L031,CS302 Lecture 2 - Part A,SPRING2026,2,2026-02-16,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+32,L032,CS302 Lecture 2 - Part B,SPRING2026,2,2026-02-18,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+33,L033,CS301 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+34,L034,CS301 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+35,L035,CS301 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 401,20
+36,L036,CS301 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+37,L037,CS302 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+38,L038,CS302 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+39,L039,CS302 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+40,L040,CS302 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+41,L041,CS401 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+42,L042,CS401 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+43,L043,MATH201 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+44,L044,MATH201 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+45,L045,CS301 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+46,L046,CS301 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+47,L047,CS302 Lecture 3 - Part A,SPRING2026,3,2026-02-23,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+48,L048,CS302 Lecture 3 - Part B,SPRING2026,3,2026-02-25,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+49,L049,CS301 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+50,L050,CS301 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+51,L051,CS301 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 501,20
+52,L052,CS301 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 204,20
+53,L053,CS302 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+54,L054,CS302 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+55,L055,CS302 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+56,L056,CS302 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+57,L057,CS401 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+58,L058,CS401 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+59,L059,MATH201 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+60,L060,MATH201 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+61,L061,CS301 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+62,L062,CS301 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 305,20
+63,L063,CS302 Lecture 4 - Part A,SPRING2026,4,2026-03-02,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+64,L064,CS302 Lecture 4 - Part B,SPRING2026,4,2026-03-04,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+65,L065,CS301 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+66,L066,CS301 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+67,L067,CS301 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 501,20
+68,L068,CS301 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 401,20
+69,L069,CS302 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+70,L070,CS302 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+71,L071,CS302 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+72,L072,CS302 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 401,20
+73,L073,CS401 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+74,L074,CS401 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+75,L075,MATH201 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+76,L076,MATH201 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+77,L077,CS301 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+78,L078,CS301 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+79,L079,CS302 Lecture 5 - Part A,SPRING2026,5,2026-03-09,Monday,10:00:00,11:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+80,L080,CS302 Lecture 5 - Part B,SPRING2026,5,2026-03-11,Wednesday,14:00:00,15:00:00,analyzed,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 401,20
+81,L081,CS301 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+82,L082,CS301 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+83,L083,CS301 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+84,L084,CS301 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 204,20
+85,L085,CS302 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+86,L086,CS302 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+87,L087,CS302 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+88,L088,CS302 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 204,20
+89,L089,CS401 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+90,L090,CS401 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+91,L091,MATH201 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+92,L092,MATH201 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+93,L093,CS301 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+94,L094,CS301 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+95,L095,CS302 Lecture 6 - Part A,SPRING2026,6,2026-03-16,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+96,L096,CS302 Lecture 6 - Part B,SPRING2026,6,2026-03-18,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+97,L097,CS301 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+98,L098,CS301 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+99,L099,CS301 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+100,L100,CS301 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+101,L101,CS302 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+102,L102,CS302 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+103,L103,CS302 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 204,20
+104,L104,CS302 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+105,L105,CS401 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+106,L106,CS401 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+107,L107,MATH201 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+108,L108,MATH201 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+109,L109,CS301 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+110,L110,CS301 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+111,L111,CS302 Lecture 7 - Part A,SPRING2026,7,2026-03-23,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+112,L112,CS302 Lecture 7 - Part B,SPRING2026,7,2026-03-25,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+113,L113,CS301 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+114,L114,CS301 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 401,20
+115,L115,CS301 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+116,L116,CS301 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+117,L117,CS302 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 401,20
+118,L118,CS302 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+119,L119,CS302 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 204,20
+120,L120,CS302 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+121,L121,CS401 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+122,L122,CS401 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+123,L123,MATH201 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+124,L124,MATH201 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+125,L125,CS301 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+126,L126,CS301 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+127,L127,CS302 Lecture 8 - Part A,SPRING2026,8,2026-03-30,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+128,L128,CS302 Lecture 8 - Part B,SPRING2026,8,2026-04-01,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+129,L129,CS301 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+130,L130,CS301 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+131,L131,CS301 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 204,20
+132,L132,CS301 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+133,L133,CS302 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 401,20
+134,L134,CS302 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+135,L135,CS302 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+136,L136,CS302 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+137,L137,CS401 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+138,L138,CS401 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+139,L139,MATH201 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+140,L140,MATH201 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+141,L141,CS301 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+142,L142,CS301 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+143,L143,CS302 Lecture 9 - Part A,SPRING2026,9,2026-04-06,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+144,L144,CS302 Lecture 9 - Part B,SPRING2026,9,2026-04-08,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+145,L145,CS301 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+146,L146,CS301 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 401,20
+147,L147,CS301 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 501,20
+148,L148,CS301 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+149,L149,CS302 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 401,20
+150,L150,CS302 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+151,L151,CS302 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+152,L152,CS302 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+153,L153,CS401 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+154,L154,CS401 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+155,L155,MATH201 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+156,L156,MATH201 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+157,L157,CS301 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+158,L158,CS301 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 401,20
+159,L159,CS302 Lecture 10 - Part A,SPRING2026,10,2026-04-13,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 401,20
+160,L160,CS302 Lecture 10 - Part B,SPRING2026,10,2026-04-15,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+161,L161,CS301 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+162,L162,CS301 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+163,L163,CS301 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+164,L164,CS301 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 401,20
+165,L165,CS302 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+166,L166,CS302 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+167,L167,CS302 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 401,20
+168,L168,CS302 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 401,20
+169,L169,CS401 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+170,L170,CS401 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+171,L171,MATH201 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+172,L172,MATH201 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+173,L173,CS301 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+174,L174,CS301 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 305,20
+175,L175,CS302 Lecture 11 - Part A,SPRING2026,11,2026-04-20,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+176,L176,CS302 Lecture 11 - Part B,SPRING2026,11,2026-04-22,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+177,L177,CS301 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 401,20
+178,L178,CS301 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+179,L179,CS301 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+180,L180,CS301 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 501,20
+181,L181,CS302 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+182,L182,CS302 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 305,20
+183,L183,CS302 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+184,L184,CS302 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 401,20
+185,L185,CS401 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+186,L186,CS401 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+187,L187,MATH201 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+188,L188,MATH201 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+189,L189,CS301 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 305,20
+190,L190,CS301 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 305,20
+191,L191,CS302 Lecture 12 - Part A,SPRING2026,12,2026-04-27,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 401,20
+192,L192,CS302 Lecture 12 - Part B,SPRING2026,12,2026-04-29,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+193,L193,CS301 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+194,L194,CS301 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+195,L195,CS301 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 501,20
+196,L196,CS301 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+197,L197,CS302 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+198,L198,CS302 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+199,L199,CS302 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+200,L200,CS302 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+201,L201,CS401 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+202,L202,CS401 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+203,L203,MATH201 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+204,L204,MATH201 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 501,20
+205,L205,CS301 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 401,20
+206,L206,CS301 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+207,L207,CS302 Lecture 13 - Part A,SPRING2026,13,2026-05-04,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+208,L208,CS302 Lecture 13 - Part B,SPRING2026,13,2026-05-06,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+209,L209,CS301 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+210,L210,CS301 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 501,20
+211,L211,CS301 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+212,L212,CS301 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 401,20
+213,L213,CS302 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+214,L214,CS302 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 401,20
+215,L215,CS302 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+216,L216,CS302 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 204,20
+217,L217,CS401 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 501,20
+218,L218,CS401 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+219,L219,MATH201 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+220,L220,MATH201 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+221,L221,CS301 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+222,L222,CS301 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+223,L223,CS302 Lecture 14 - Part A,SPRING2026,14,2026-05-11,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 204,20
+224,L224,CS302 Lecture 14 - Part B,SPRING2026,14,2026-05-13,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 401,20
+225,L225,CS301 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+226,L226,CS301 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 305,20
+227,L227,CS301 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 501,20
+228,L228,CS301 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+229,L229,CS302 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+230,L230,CS302 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 204,20
+231,L231,CS302 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 401,20
+232,L232,CS302 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 305,20
+233,L233,CS401 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 305,20
+234,L234,CS401 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 401,20
+235,L235,MATH201 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 401,20
+236,L236,MATH201 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+237,L237,CS301 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 401,20
+238,L238,CS301 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 501,20
+239,L239,CS302 Lecture 15 - Part A,SPRING2026,15,2026-05-18,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+240,L240,CS302 Lecture 15 - Part B,SPRING2026,15,2026-05-20,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20
+241,L241,CS301 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 204,20
+242,L242,CS301 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,1,T01,Dr. Ahmed,Room 401,20
+243,L243,CS301 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 401,20
+244,L244,CS301 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,2,G02,Group B,1,T01,Dr. Ahmed,Room 305,20
+245,L245,CS302 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+246,L246,CS302 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,1,T01,Dr. Ahmed,Room 501,20
+247,L247,CS302 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 501,20
+248,L248,CS302 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,4,G04,Group B,1,T01,Dr. Ahmed,Room 401,20
+249,L249,CS401 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+250,L250,CS401 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,3,CS401,Advanced Machine Learning,5,G05,Group A,2,T02,Dr. Smith,Room 204,20
+251,L251,MATH201 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 204,20
+252,L252,MATH201 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,4,MATH201,Statistics for Data Analysis,6,G06,Group B,2,T02,Dr. Smith,Room 305,20
+253,L253,CS301 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 204,20
+254,L254,CS301 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,1,CS301,Artificial Intelligence,1,G01,Group A,3,T03,Dr. Johnson,Room 401,20
+255,L255,CS302 Lecture 16 - Part A,SPRING2026,16,2026-05-25,Monday,10:00:00,11:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 305,20
+256,L256,CS302 Lecture 16 - Part B,SPRING2026,16,2026-05-27,Wednesday,14:00:00,15:00:00,scheduled,2,CS302,Data Science Fundamentals,3,G03,Group A,3,T03,Dr. Johnson,Room 501,20

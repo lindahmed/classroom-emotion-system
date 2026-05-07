@@ -11,12 +11,27 @@ library(scales)
 library(shinyjs)
 library(httr)
 library(jsonlite)
+library(openssl)
 
 # Load helper functions
-source("R/generate_sample_data.R")
+source("R/db_connect.R")
+source("R/db_auth.R")
+source("R/db_queries.R")
 source("R/data_helpers.R")
 source("R/analytics_helpers.R")
 source("R/ui_helpers.R")
+source("R/csv_backup.R")
+
+# Initialize database pool on app start
+# (conditional — falls back to CSV if DB unavailable)
+.try_db_init <- tryCatch({
+  get_db_pool()
+  TRUE
+}, error = function(e) {
+  message(paste("Database not available, using CSV fallback:", e$message))
+  source("R/generate_sample_data.R")
+  FALSE
+})
 
 # Initialize app-level data
 app_data <- reactiveValues(
@@ -27,20 +42,30 @@ app_data <- reactiveValues(
   user_role = NULL,
   user_id = NULL,
   user_name = NULL,
+  user_username = NULL,
+  db_user_id = NULL,
   selected_week = 1,
   selected_lecture_id = NULL,
-  start_session_request = NULL,  # Add this for async API calls
+  start_session_request = NULL,
   live_face_response = NULL
 )
 
-# Hardcoded users
-USERS <- list(
-  list(username = "admin",    password = "admin123",    role = "Admin",    user_id = "ADMIN", name = "Administrator"),
-  list(username = "lecturer", password = "lecturer123", role = "Lecturer", user_id = "T01",   name = "Dr. Ahmed"),
-  list(username = "student",  password = "student123",  role = "Student",  user_id = "S001",  name = "Student 1")
-)
-
+# Authenticate user via PostgreSQL (with CSV fallback)
 authenticate_user <- function(username, password) {
+  # Try database auth first
+  if (.try_db_init) {
+    user <- tryCatch({
+      authenticate_user_pg(username, password)
+    }, error = function(e) NULL)
+    if (!is.null(user)) return(user)
+  }
+
+  # CSV fallback: hardcoded users for development
+  USERS <- list(
+    list(username = "admin",    password = "admin123",    role = "Admin",    user_id = "ADMIN", name = "Administrator"),
+    list(username = "lecturer", password = "lecturer123", role = "Lecturer", user_id = "T01",   name = "Dr. Ahmed"),
+    list(username = "student",  password = "student123",  role = "Student",  user_id = "S001",  name = "Student 1")
+  )
   for (u in USERS) {
     if (u$username == username && u$password == password) return(u)
   }
@@ -345,10 +370,12 @@ ui <- fluidPage(
       "});\n" ))
   ),
   
-  # ── Login overlay ──────────────────────────────────────────────────────────
+  # ── Login / Sign-up overlay ─────────────────────────────────────────────────
   div(
     id = "login_overlay",
+    # Login card
     div(
+      id = "login_card",
       class = "login-card",
       div(class = "login-logo", "LogIn"),
       div(class = "login-sub",  "Classroom Emotion Detection & Analysis"),
@@ -365,13 +392,64 @@ ui <- fluidPage(
       ),
       shinyjs::hidden(
         div(id = "login_error", class = "alert alert-warning mt-3 small mb-0",
-            "❌ Invalid username or password.")
+            "Invalid username or password.")
+      ),
+      div(style = "text-align:center; margin-top:1rem;",
+          actionLink("show_signup", "Don't have an account? Sign Up",
+                     style = "color: var(--accent-strong); font-weight:600; font-size:0.9rem; text-decoration:none;")
       ),
       div(class = "alert alert-info mt-3 small mb-0",
           tags$b("Demo credentials:"), br(),
           "admin / admin123", br(),
           "lecturer / lecturer123", br(),
           "student / student123"
+      )
+    ),
+    # Sign-up card
+    shinyjs::hidden(
+      div(
+        id = "signup_card",
+        class = "login-card",
+        div(class = "login-logo", "Sign Up"),
+        div(class = "login-sub",  "Create a new student account"),
+        div(class = "mb-3",
+            tags$label("Full Name", class = "form-label"),
+            textInput("signup_name", NULL, placeholder = "Enter your full name")
+        ),
+        div(class = "mb-3",
+            tags$label("Student ID", class = "form-label"),
+            textInput("signup_student_code", NULL, placeholder = "e.g., S121")
+        ),
+        div(class = "mb-3",
+            tags$label("Username", class = "form-label"),
+            textInput("signup_username", NULL, placeholder = "Choose a username")
+        ),
+        div(class = "mb-3",
+            tags$label("Email", class = "form-label"),
+            textInput("signup_email", NULL, placeholder = "Enter your email")
+        ),
+        div(class = "mb-3",
+            tags$label("Password", class = "form-label"),
+            passwordInput("signup_password", NULL, placeholder = "Min. 6 characters")
+        ),
+        div(class = "mb-4",
+            tags$label("Confirm Password", class = "form-label"),
+            passwordInput("signup_password_confirm", NULL, placeholder = "Re-enter password")
+        ),
+        actionButton("signup_btn", "Create Account", class = "btn btn-primary w-100",
+                     style = "padding:0.6rem; font-weight:700; font-size:1rem;"
+        ),
+        shinyjs::hidden(
+          div(id = "signup_error", class = "alert alert-warning mt-3 small mb-0", "")
+        ),
+        shinyjs::hidden(
+          div(id = "signup_success", class = "alert alert-success mt-3 small mb-0",
+              "Account created! You can now sign in.")
+        ),
+        div(style = "text-align:center; margin-top:1rem;",
+            actionLink("show_login", "Already have an account? Sign In",
+                       style = "color: var(--accent-strong); font-weight:600; font-size:0.9rem; text-decoration:none;")
+        )
       )
     )
   ),
@@ -676,9 +754,16 @@ ui <- fluidPage(
               column(6, div(class = "ep-card",
                             div(class = "ep-card-header", "About EduPulse AI"),
                             p("EduPulse AI is a classroom emotion detection and statistical analysis system."),
-                            p("This is a prototype using mock CSV data."),
-                            p("Version: 0.2.0 — Enhanced Semester Dashboard"),
-                            p("Stack: R · Shiny · ggplot2 · DT · shinyjs")
+                            p("Data is stored in PostgreSQL with CSV file backups."),
+                            p("Version: 0.3.0 — Full Database Integration"),
+                            p("Stack: R · Shiny · PostgreSQL · ggplot2 · DT · shinyjs"),
+                            hr(class = "ep-hr"),
+                            div(class = "ep-card-header", "CSV Backup"),
+                            p(style = "color: var(--muted); font-size:0.82rem;",
+                              "CSV backups sync automatically every 10 minutes."),
+                            actionButton("sync_csv_btn", "Sync Now",
+                                         class = "btn btn-primary btn-sm"),
+                            textOutput("sync_status")
               ))
             )
           ))
@@ -746,9 +831,16 @@ server <- function(input, output, session) {
       app_data$user_role <- user$role
       app_data$user_id   <- user$user_id
       app_data$user_name <- user$name
+      app_data$user_username <- user$username
+      app_data$db_user_id <- if (!is.null(user$db_user_id)) user$db_user_id else NULL
       app_data$selected_week <- 1
       app_data$selected_lecture_id <- NULL
-      
+
+      # Update last login timestamp in DB
+      if (.try_db_init && !is.null(user$db_user_id)) {
+        tryCatch(update_last_login(user$db_user_id), error = function(e) NULL)
+      }
+
       # Load & filter data
       app_data$all_data       <- load_emotion_data()
       app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
@@ -777,7 +869,67 @@ server <- function(input, output, session) {
       shinyjs::show("login_error")
     }
   })
-  
+
+  # ── Toggle between Login and Sign-up ─────────────────────────────────────
+  observeEvent(input$show_signup, {
+    shinyjs::hide("login_card")
+    shinyjs::show("signup_card")
+    shinyjs::hide("login_error")
+  })
+
+  observeEvent(input$show_login, {
+    shinyjs::hide("signup_card")
+    shinyjs::show("login_card")
+    shinyjs::hide("signup_error")
+    shinyjs::hide("signup_success")
+  })
+
+  # ── Sign-up handler ──────────────────────────────────────────────────────
+  observeEvent(input$signup_btn, {
+    shinyjs::hide("signup_success")
+
+    # Basic client-side validation
+    if (input$signup_password != input$signup_password_confirm) {
+      shinyjs::html("signup_error", "Passwords do not match.")
+      shinyjs::show("signup_error")
+      return()
+    }
+
+    if (.try_db_init) {
+      result <- tryCatch({
+        register_student_pg(
+          username     = input$signup_username,
+          email        = input$signup_email,
+          password     = input$signup_password,
+          full_name    = input$signup_name,
+          student_code = input$signup_student_code
+        )
+      }, error = function(e) {
+        list(error = paste("Registration failed:", e$message))
+      })
+    } else {
+      result <- list(error = "Database not available. Cannot register.")
+    }
+
+    if (!is.null(result$error)) {
+      shinyjs::html("signup_error", result$error)
+      shinyjs::show("signup_error")
+    } else {
+      # Success — show message and switch to login
+      shinyjs::hide("signup_error")
+      shinyjs::show("signup_success")
+      updateTextInput(session, "login_username", value = input$signup_username)
+      updateTextInput(session, "login_password", value = "")
+      # Auto-switch to login after 2 seconds
+      shinyjs::delay(2000, {
+        shinyjs::hide("signup_card")
+        shinyjs::show("login_card")
+        shinyjs::hide("signup_success")
+      })
+      showNotification("Account created successfully! Please sign in.", type = "message", duration = 4)
+    }
+  })
+
   # ── Logout ────────────────────────────────────────────────────────────────
   observeEvent(input$logout_btn, {
     session$sendCustomMessage("stopCamera", list())
@@ -972,6 +1124,52 @@ server <- function(input, output, session) {
     parsed <- tryCatch(fromJSON(input$live_face_response), error = function(e) NULL)
     if (!is.null(parsed)) {
       app_data$live_face_response <- parsed
+
+      # Persist recognized face data to DB + CSV backup
+      if (!is.null(parsed$recognized) && parsed$recognized != FALSE) {
+        lid <- app_data$selected_lecture_id
+        if (!is.null(lid) && nchar(lid) > 0) {
+          tryCatch({
+            # Write emotion record to DB + CSV
+            insert_emotion_record(
+              student_code = parsed$student_id,
+              lecture_code = lid,
+              recorded_at  = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+              emotion      = parsed$emotion %||% "Neutral",
+              confidence   = as.numeric(parsed$confidence %||% 0),
+              engagement_score = as.numeric(parsed$engagement_score %||% 0),
+              focus_score  = as.numeric(parsed$focus_score %||% 0),
+              is_present   = identical(parsed$attendance_status, "Present") || identical(parsed$attendance_status, "Returned"),
+              left_room    = identical(parsed$attendance_status, "Left"),
+              absence_duration_minutes = as.integer(parsed$absence_duration_minutes %||% 0),
+              source       = "live_camera",
+              model_name   = "EduPulse_v1.0"
+            )
+
+            # Upsert attendance to DB + CSV
+            upsert_attendance_record(
+              student_code = parsed$student_id,
+              lecture_code = lid,
+              status       = parsed$attendance_status %||% "Present"
+            )
+
+            # Check for confusion alert
+            check_and_create_confusion_alert(lid)
+
+            # Also write flat row to main CSV backup
+            csv_append_emotion_record(parsed, lid)
+
+            # Update in-memory data so charts refresh immediately
+            new_row <- build_emotion_flat_row(parsed, lid)
+            if (!is.null(app_data$all_data) && nrow(app_data$all_data) > 0) {
+              app_data$all_data <- bind_rows(app_data$all_data, new_row)
+              app_data$filtered_data <- filter_by_role(app_data$all_data, app_data$user_role, app_data$user_id)
+            }
+          }, error = function(e) {
+            message(paste("Failed to persist live frame:", e$message))
+          })
+        }
+      }
     }
   })
   
@@ -1197,8 +1395,7 @@ server <- function(input, output, session) {
   output$role_badge       <- renderText({ if(is_logged_in()) app_data$user_role else "" })
   output$info_username    <- renderText({
     if(!is_logged_in()) return("Not logged in")
-    for(u in USERS) if(u$user_id==app_data$user_id) return(u$username)
-    "Unknown"
+    app_data$user_username %||% "Unknown"
   })
   output$info_role         <- renderText({ if(is_logged_in()) app_data$user_role  else "Not logged in" })
   output$info_user_id      <- renderText({ if(is_logged_in()) app_data$user_id    else "Not logged in" })
@@ -1212,6 +1409,39 @@ server <- function(input, output, session) {
     if(is.null(lid)||lid=="") "None" else lid
   })
   
+  # ── Periodic CSV backup sync (every 10 minutes) ─────────────────────────
+  csv_sync_timer <- reactiveTimer(600000)
+  observe({
+    csv_sync_timer()
+    if (.try_db_init && is_logged_in()) {
+      tryCatch({
+        csv_backup_all()
+        app_data$last_csv_sync <- Sys.time()
+      }, error = function(e) {
+        message(paste("Periodic CSV backup failed:", e$message))
+      })
+    }
+  })
+
+  # ── Manual CSV sync button ──────────────────────────────────────────────
+  sync_status <- reactiveVal(NULL)
+  observeEvent(input$sync_csv_btn, {
+    if (.try_db_init) {
+      tryCatch({
+        csv_backup_all()
+        sync_status(paste("Last sync:", format(Sys.time(), "%H:%M:%S")))
+        showNotification("CSV backup synced successfully!", type = "message", duration = 3)
+      }, error = function(e) {
+        sync_status(paste("Sync failed:", e$message))
+        showNotification(paste("CSV backup failed:", e$message), type = "error", duration = 5)
+      })
+    } else {
+      sync_status("Database not available — cannot sync")
+      showNotification("Database not available", type = "warning", duration = 3)
+    }
+  })
+  output$sync_status <- renderText({ sync_status() })
+
   # ── CSV export ────────────────────────────────────────────────────────────
   output$download_data <- downloadHandler(
     filename = function() paste0("edupulse_export_",format(Sys.time(),"%Y%m%d_%H%M%S"),".csv"),

@@ -5,3 +5,7 @@ tf-keras
 opencv-python
 pandas
 python-multipart
+psycopg2-binary
+passlib[bcrypt]
+python-jose
+pydantic

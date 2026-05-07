@@ -1,12 +1,27 @@
+# data_helpers.R — Data loading and filtering for EduPulse AI
+# Uses PostgreSQL queries via db_queries.R
+
+source("R/db_queries.R")
+
+# Use PostgreSQL as primary source, with CSV fallback
+USE_DATABASE <- TRUE
+
 load_emotion_data <- function(path = "data/emotion_records.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      df <- db_query("SELECT * FROM vw_emotion_records_flat", list())
+      return(df)
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+
+  # CSV fallback
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_all_mock_data()
   }
-
   df <- readr::read_csv(path, show_col_types = FALSE)
-
-  # Ensure correct data types
   df <- df %>%
     mutate(
       record_id = as.integer(record_id),
@@ -14,16 +29,24 @@ load_emotion_data <- function(path = "data/emotion_records.csv") {
       is_present = as.logical(is_present),
       left_room = as.logical(left_room)
     )
-
   df
 }
 
 load_lecture_schedule <- function(path = "data/lecture_schedule.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      df <- db_query("SELECT * FROM vw_lecture_schedule", list())
+      return(df)
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+
+  # CSV fallback
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_lecture_schedule(path)
   }
-
   df <- readr::read_csv(path, show_col_types = FALSE)
   df <- df %>%
     mutate(
@@ -35,11 +58,22 @@ load_lecture_schedule <- function(path = "data/lecture_schedule.csv") {
 }
 
 load_semester_weeks <- function(path = "data/semester_weeks.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      return(db_query(
+        "SELECT semester_id, academic_week, week_label, start_date, end_date, status::text AS status FROM semester_weeks ORDER BY academic_week",
+        list()
+      ))
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+
+  # CSV fallback
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_semester_weeks(path)
   }
-
   df <- readr::read_csv(path, show_col_types = FALSE)
   df <- df %>%
     mutate(
@@ -50,6 +84,14 @@ load_semester_weeks <- function(path = "data/semester_weeks.csv") {
 }
 
 load_courses <- function(path = "data/courses.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      return(db_query("SELECT * FROM courses ORDER BY course_code", list()))
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_courses(path)
@@ -58,6 +100,19 @@ load_courses <- function(path = "data/courses.csv") {
 }
 
 load_groups <- function(path = "data/groups.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      return(db_query(
+        "SELECT sg.group_id, sg.group_code, sg.group_name, sg.course_id, sg.semester_id,
+                (SELECT COUNT(*) FROM group_memberships gm WHERE gm.group_id = sg.group_id) AS student_count
+         FROM student_groups sg ORDER BY sg.group_code",
+        list()
+      ))
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_groups(path)
@@ -70,12 +125,10 @@ filter_by_role <- function(data, user_role, user_id = NULL) {
   if (user_role == "Admin") {
     return(data)
   } else if (user_role == "Lecturer") {
-    # Lecturer sees only their assigned lectures
     lecturer_data <- data %>%
       filter(lecturer_id == user_id)
     return(lecturer_data)
   } else if (user_role == "Student") {
-    # Student sees only their own data
     student_data <- data %>%
       filter(student_id == user_id)
     return(student_data)
@@ -90,7 +143,6 @@ filter_schedule_by_role <- function(schedule, user_role, user_id = NULL) {
   } else if (user_role == "Lecturer") {
     return(schedule %>% filter(lecturer_id == user_id))
   }
-  # Students don't see schedule
   data.frame()
 }
 
@@ -107,7 +159,7 @@ get_lectures <- function(data) {
     pull(lecture_id)
 }
 
-# Get unique groups (replacing cohorts)
+# Get unique groups
 get_groups_from_data <- function(data) {
   if (nrow(data) == 0 || !("group_id" %in% names(data))) {
     return(c())

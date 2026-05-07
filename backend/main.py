@@ -4,7 +4,6 @@ from face_registry import KNOWN_STUDENTS
 from face_recognition_engine import recognize_face
 from emotion_engine import analyze_emotion
 from attendance_tracker import tracker
-from storage import append_record
 from pydantic import BaseModel
 from typing import List
 import uuid
@@ -73,7 +72,6 @@ async def analyze_frame(file: UploadFile = File(...), lecture_id: str = Form(...
         'absence_duration_minutes': tracker.sessions.get(lecture_id, {}).get(recognition['student_id'], {}).get('absence_duration', 0) / 60,
         'group': 'Group1'  # Placeholder
     }
-    append_record(record)
     record['recognized'] = True
     return record
 
