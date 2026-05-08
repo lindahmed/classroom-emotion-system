@@ -104,103 +104,103 @@ ui <- fluidPage(
     tags$link(rel = "stylesheet", href = "custom.css"),
     tags$style(HTML("
       /* ── EduPulse AI – Theme Variables ─────────────────────────────────── */
-      /* Dark Mode (default) – black/charcoal + purple accent */
+      /* Dark Mode (default) – navy/slate + sky-blue accent */
       :root {
-        --bg: #09090b;
-        --surface: #18181b;
-        --surface-alt: #111113;
-        --text: #fafafa;
-        --muted: #a1a1aa;
-        --accent: #a78bfa;
-        --accent-strong: #8b5cf6;
-        --border: #27272a;
-        --border-strong: #a78bfa;
-        --panel-text: #a78bfa;
-        --alert-info-bg: rgba(167,139,250,0.12);
-        --alert-info-border: #8b5cf6;
-        --alert-info-text: #c4b5fd;
+        --bg: #0b1220;
+        --surface: #111a2d;
+        --surface-alt: #0f172a;
+        --text: #f1f5f9;
+        --muted: #94a3b8;
+        --accent: #81aad9;
+        --accent-strong: #6b96c7;
+        --border: #24344c;
+        --border-strong: #81aad9;
+        --panel-text: #81aad9;
+        --alert-info-bg: rgba(129,170,217,0.12);
+        --alert-info-border: #81aad9;
+        --alert-info-text: #a8c4e0;
         --alert-warning-bg: rgba(245,158,11,0.12);
         --alert-warning-border: #f59e0b;
         --alert-warning-text: #fcd34d;
-        --field-bg: #18181b;
-        --field-border: #3f3f46;
-        --datatable-head: #111113;
-        --datatable-row: #09090b;
-        --datatable-row-hover: #18181b;
-        --datatable-text: #fafafa;
-        --dataTables-input-bg: #18181b;
-        --dataTables-input-border: #3f3f46;
-        --dataTables-input-text: #fafafa;
-        --navbar-bg: #09090b;
-        --navbar-link: #a1a1aa;
-        --navbar-link-hover: #a78bfa;
-        --login-bg: #18181b;
-        --login-border: #3f3f46;
-        --login-shadow: rgba(0,0,0,0.7);
-        --login-logo: #a78bfa;
-        --shadow-card: none;
-        --shadow-soft: none;
+        --field-bg: #111a2d;
+        --field-border: #334766;
+        --datatable-head: #0f172a;
+        --datatable-row: #0b1220;
+        --datatable-row-hover: #111a2d;
+        --datatable-text: #f1f5f9;
+        --dataTables-input-bg: #111a2d;
+        --dataTables-input-border: #334766;
+        --dataTables-input-text: #f1f5f9;
+        --navbar-bg: #0b1220;
+        --navbar-link: #94a3b8;
+        --navbar-link-hover: #81aad9;
+        --login-bg: #111a2d;
+        --login-border: #334766;
+        --login-shadow: rgba(0,0,0,0.5);
+        --login-logo: #81aad9;
+        --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+        --shadow-soft: 0 4px 20px rgba(0,0,0,0.25);
       }
       /* Light Mode – applied via html[data-theme='light'] */
       html[data-theme='light'] {
-        --bg: #f7f9fb;
+        --bg: #f6f7f8;
         --surface: #ffffff;
-        --surface-alt: #f2f4f6;
-        --text: #191c1e;
-        --muted: #475569;
-        --accent: #7c3aed;
-        --accent-strong: #6d28d9;
-        --border: #e2e8f0;
-        --border-strong: #7c3aed;
-        --panel-text: #7c3aed;
-        --alert-info-bg: rgba(124,58,237,0.08);
-        --alert-info-border: #8b5cf6;
-        --alert-info-text: #5b21b6;
+        --surface-alt: #eef2f7;
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #81aad9;
+        --accent-strong: #6b96c7;
+        --border: #dbe4ef;
+        --border-strong: #81aad9;
+        --panel-text: #81aad9;
+        --alert-info-bg: rgba(129,170,217,0.08);
+        --alert-info-border: #81aad9;
+        --alert-info-text: #3a6fa0;
         --alert-warning-bg: rgba(245,158,11,0.10);
         --alert-warning-border: #d97706;
         --alert-warning-text: #92400e;
         --field-bg: #ffffff;
-        --field-border: #cbd5e1;
-        --datatable-head: #f8fafc;
+        --field-border: #c3d0e0;
+        --datatable-head: #eef2f7;
         --datatable-row: #ffffff;
-        --datatable-row-hover: #f0ebff;
-        --datatable-text: #191c1e;
+        --datatable-row-hover: rgba(129,170,217,0.08);
+        --datatable-text: #0f172a;
         --dataTables-input-bg: #ffffff;
-        --dataTables-input-border: #cbd5e1;
-        --dataTables-input-text: #191c1e;
+        --dataTables-input-border: #c3d0e0;
+        --dataTables-input-text: #0f172a;
         --navbar-bg: #ffffff;
-        --navbar-link: #475569;
-        --navbar-link-hover: #7c3aed;
+        --navbar-link: #64748b;
+        --navbar-link-hover: #81aad9;
         --login-bg: #ffffff;
-        --login-border: #e2e8f0;
+        --login-border: #dbe4ef;
         --login-shadow: rgba(15,23,42,0.10);
-        --login-logo: #7c3aed;
+        --login-logo: #81aad9;
         --shadow-card: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
         --shadow-soft: 0 4px 20px rgba(15,23,42,0.08);
       }
       /* Transition everything smoothly on theme change */
       *, *::before, *::after {
-        transition: background-color 0.22s ease, border-color 0.22s ease, color 0.18s ease, box-shadow 0.22s ease;
+        transition: background-color 0.26s ease-out, border-color 0.26s ease-out, color 0.18s ease-out, box-shadow 0.26s ease-out;
       }
-      body { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', sans-serif; margin:0; }
+      body { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; margin:0; }
       .ep-navbar { background-color: var(--navbar-bg); border-bottom: 1px solid var(--border);
                    padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
                    box-shadow: var(--shadow-card); flex-wrap: wrap; }
       .ep-brand  { color: var(--accent); font-weight: 800; font-size: 1.25rem; margin-right: auto; }
       .ep-nav-link { color: var(--navbar-link); background: none; border: none; cursor: pointer;
-                     font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;
-                     transition: color 0.15s, background 0.15s; }
-      .ep-nav-link:hover { color: var(--navbar-link-hover); background: rgba(124,58,237,0.08); }
+                     font-size: 0.85rem; padding: 4px 10px; border-radius: 10px;
+                     transition: color 0.22s ease-out, background 0.22s ease-out; }
+      .ep-nav-link:hover { color: var(--navbar-link-hover); background: rgba(129,170,217,0.08); }
       .sidebar { background-color: var(--surface); border-right: 1px solid var(--border);
                  min-height: calc(100vh - 56px); padding: 1.25rem; width: 220px; flex-shrink: 0; }
       .main-panel { background-color: var(--bg); padding: 1.5rem; flex-grow: 1; overflow-y: auto; }
-      .ep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      .ep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
                  padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-card); }
       .ep-card-header { color: var(--panel-text); font-weight: 700; font-size: 0.82rem;
                         text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.85rem; }
       .metric-card { background: var(--surface);
-                     border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem;
-                     margin-bottom: 0.75rem; transition: border-color 0.2s, box-shadow 0.2s;
+                     border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem;
+                     margin-bottom: 0.75rem; transition: border-color 0.22s ease-out, box-shadow 0.22s ease-out;
                      box-shadow: var(--shadow-card); }
       .metric-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-soft); }
       .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
@@ -209,38 +209,38 @@ ui <- fluidPage(
       .metric-icon  { font-size: 1.3rem; margin-bottom: 0.3rem; }
       .week-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; }
       .week-btn { width:100%; background: var(--bg); border:1px solid var(--border); color: var(--muted);
-                  border-radius:7px; padding:5px 2px; font-size:0.72rem; cursor:pointer;
-                  transition:all 0.18s; line-height:1.2; }
+                  border-radius:10px; padding:5px 2px; font-size:0.72rem; cursor:pointer;
+                  transition:all 0.22s ease-out; line-height:1.2; }
       .week-btn:hover  { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
       .week-btn.active { background: var(--accent-strong); border-color: var(--accent-strong); color:#fff; font-weight:700; }
       .section-title { color: var(--accent); font-size:1.4rem; font-weight:800; margin-bottom:0.2rem; }
       .section-sub   { color: var(--muted); font-size:0.88rem; margin-bottom:1.25rem; }
       .week-info-bar { background: var(--surface);
-                       border:1px solid var(--border-strong); border-radius:10px;
+                       border:1px solid var(--border-strong); border-radius:14px;
                        padding:0.65rem 1.2rem; margin-bottom:1.1rem;
                        color: var(--accent); font-weight:700; font-size:0.95rem; }
       .badge-role { background: var(--surface); color: var(--accent); padding:3px 12px;
-                   border-radius:20px; font-size:0.72rem; font-weight:700; border:1px solid var(--border); }
+                   border-radius:24px; font-size:0.72rem; font-weight:700; border:1px solid var(--border); }
       .form-label { color: var(--muted); font-size:0.78rem; font-weight:700; letter-spacing:0.05em; display:block; }
       .alert-info    { background: var(--alert-info-bg)!important; border:1px solid var(--alert-info-border)!important;
-                       color: var(--alert-info-text)!important; border-radius:10px; padding:0.65rem 1rem; }
+                       color: var(--alert-info-text)!important; border-radius:14px; padding:0.65rem 1rem; }
       .alert-warning { background: var(--alert-warning-bg)!important; border:1px solid var(--alert-warning-border)!important;
-                       color: var(--alert-warning-text)!important; border-radius:10px; padding:0.65rem 1rem; }
+                       color: var(--alert-warning-text)!important; border-radius:14px; padding:0.65rem 1rem; }
       select.form-select, .form-control { background: var(--field-bg)!important; border:1px solid var(--field-border)!important;
-        color: var(--text)!important; border-radius:8px!important; }
+        color: var(--text)!important; border-radius:12px!important; }
       table.dataTable thead th { background: var(--datatable-head)!important; color: var(--accent); border-bottom:2px solid var(--border); }
       table.dataTable tbody tr { background: var(--datatable-row)!important; }
       table.dataTable tbody tr:hover { background: var(--datatable-row-hover)!important; }
       table.dataTable tbody td { color: var(--datatable-text)!important; border-color: var(--border); }
-      .dataTables_wrapper { background: var(--surface)!important; border-radius: 12px; padding: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow-card); }
+      .dataTables_wrapper { background: var(--surface)!important; border-radius: 16px; padding: 1rem; border: 1px solid var(--border); box-shadow: var(--shadow-card); }
       .dataTables_info,.dataTables_length label,.dataTables_filter label { color: var(--muted); }
       .dataTables_filter input,.dataTables_length select { background: var(--dataTables-input-bg)!important; border:1px solid var(--dataTables-input-border)!important;
-        color: var(--dataTables-input-text)!important; border-radius:6px; padding:2px 8px; }
-      .paginate_button { color: var(--muted)!important; border-radius:6px!important; background: transparent!important; }
+        color: var(--dataTables-input-text)!important; border-radius:10px; padding:2px 8px; }
+      .paginate_button { color: var(--muted)!important; border-radius:10px!important; background: transparent!important; }
       .paginate_button.current { background: var(--accent-strong)!important; color:#fff!important; border-color: var(--accent-strong)!important; }
       #login_overlay { position:fixed; inset:0; background: var(--bg); display:flex;
                        align-items:center; justify-content:center; z-index:9999; }
-      .login-card { background: var(--login-bg); border:1px solid var(--login-border); border-radius:18px;
+      .login-card { background: var(--login-bg); border:1px solid var(--login-border); border-radius:24px;
                     padding:2.5rem; width:100%; max-width:400px; box-shadow:0 25px 60px var(--login-shadow); }
       .login-logo { color: var(--login-logo); font-size:1.9rem; font-weight:800; text-align:center; margin-bottom:0.2rem; }
       .login-sub  { text-align:center; color: var(--muted); font-size:0.88rem; margin-bottom:2rem; }
@@ -267,13 +267,13 @@ ui <- fluidPage(
         font-weight: 700 !important;
         letter-spacing: 0.04em;
         cursor: pointer;
-        transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.18s !important;
+        transition: border-color 0.22s ease-out, background 0.22s ease-out, color 0.22s ease-out, transform 0.22s ease-out !important;
         white-space: nowrap;
       }
       #toggle_theme:hover {
         border-color: var(--accent) !important;
         color: var(--accent) !important;
-        transform: translateY(-1px) !important;
+        transform: translateY(-2px) !important;
       }
     ")),
     tags$script(HTML(
@@ -1188,29 +1188,29 @@ server <- function(input, output, session) {
   })
   
   # ── Charts (dark theme helper) ────────────────────────────────────────────
-  dark_plot <- function(expr, bg = "#0f172a") {
+  dark_plot <- function(expr, bg = "#0b1220") {
     renderPlot({ expr }, bg = bg)
   }
   
-  output$chart_timeline          <- renderPlot({ render_engagement_timeline(filtered_data_reactive()) },             bg="#0f172a")
-  output$chart_emotions          <- renderPlot({ render_emotion_distribution(filtered_data_reactive()) },            bg="#0f172a")
-  output$chart_confusion_timeline<- renderPlot({ render_confusion_timeline(filtered_data_reactive()) },             bg="#0f172a")
-  output$chart_boredom_timeline  <- renderPlot({ render_boredom_timeline(filtered_data_reactive()) },               bg="#0f172a")
-  output$chart_dominant_emotion  <- renderPlot({ render_dominant_emotion_by_student(filtered_data_reactive()) },    bg="#0f172a")
-  output$chart_engagement_ranking<- renderPlot({ render_student_engagement_ranking(filtered_data_reactive(),10) },  bg="#0f172a")
-  output$chart_confusion_ranking <- renderPlot({ render_confusion_rate_by_student(filtered_data_reactive(),10) },   bg="#0f172a")
-  output$chart_engagement_focus  <- renderPlot({ render_engagement_vs_focus_scatter(filtered_data_reactive()) },    bg="#0f172a")
-  output$chart_semester_engagement<-renderPlot({ render_semester_engagement_trend(app_data$filtered_data) },        bg="#0f172a")
-  output$chart_semester_confusion <- renderPlot({ render_semester_confusion_trend(app_data$filtered_data) },        bg="#0f172a")
-  output$chart_course_comparison  <- renderPlot({ render_course_engagement_comparison(app_data$filtered_data) },    bg="#0f172a")
+  output$chart_timeline          <- renderPlot({ render_engagement_timeline(filtered_data_reactive()) },             bg="#0b1220")
+  output$chart_emotions          <- renderPlot({ render_emotion_distribution(filtered_data_reactive()) },            bg="#0b1220")
+  output$chart_confusion_timeline<- renderPlot({ render_confusion_timeline(filtered_data_reactive()) },             bg="#0b1220")
+  output$chart_boredom_timeline  <- renderPlot({ render_boredom_timeline(filtered_data_reactive()) },               bg="#0b1220")
+  output$chart_dominant_emotion  <- renderPlot({ render_dominant_emotion_by_student(filtered_data_reactive()) },    bg="#0b1220")
+  output$chart_engagement_ranking<- renderPlot({ render_student_engagement_ranking(filtered_data_reactive(),10) },  bg="#0b1220")
+  output$chart_confusion_ranking <- renderPlot({ render_confusion_rate_by_student(filtered_data_reactive(),10) },   bg="#0b1220")
+  output$chart_engagement_focus  <- renderPlot({ render_engagement_vs_focus_scatter(filtered_data_reactive()) },    bg="#0b1220")
+  output$chart_semester_engagement<-renderPlot({ render_semester_engagement_trend(app_data$filtered_data) },        bg="#0b1220")
+  output$chart_semester_confusion <- renderPlot({ render_semester_confusion_trend(app_data$filtered_data) },        bg="#0b1220")
+  output$chart_course_comparison  <- renderPlot({ render_course_engagement_comparison(app_data$filtered_data) },    bg="#0b1220")
   
   # ── Emotion heatmap (new) ─────────────────────────────────────────────────
   output$chart_emotion_heatmap <- renderPlot({
     d <- app_data$filtered_data
     if (is.null(d) || nrow(d)==0) {
       return(ggplot() +
-               theme(plot.background=element_rect(fill="#0f172a",colour=NA),
-                     panel.background=element_rect(fill="#0f172a",colour=NA)) +
+               theme(plot.background=element_rect(fill="#0b1220",colour=NA),
+                     panel.background=element_rect(fill="#0b1220",colour=NA)) +
                annotate("text",x=0.5,y=0.5,label="No data",colour="#64748b",size=6))
     }
     
@@ -1225,11 +1225,11 @@ server <- function(input, output, session) {
     hm$emotion <- factor(hm$emotion, levels=rev(emotion_order))
     
     ggplot(hm, aes(x=academic_week, y=emotion, fill=pct)) +
-      geom_tile(colour="#0f172a", linewidth=0.6) +
+      geom_tile(colour="#0b1220", linewidth=0.6) +
       geom_text(aes(label=scales::percent(pct,accuracy=1)),
                 colour="white", size=3, fontface="bold") +
       scale_fill_gradientn(
-        colours=c("#1e293b","#312e81","#8b5cf6","#f59e0b"),
+        colours=c("#1e293b","#1a3a5c","#81aad9","#f59e0b"),
         labels=scales::percent, name="Share"
       ) +
       scale_x_continuous(breaks=1:16) +
@@ -1238,18 +1238,18 @@ server <- function(input, output, session) {
            x="Academic Week", y=NULL) +
       theme_minimal(base_size=12) +
       theme(
-        plot.background  = element_rect(fill="#1e293b",colour=NA),
-        panel.background = element_rect(fill="#0f172a",colour=NA),
+        plot.background  = element_rect(fill="#111a2d",colour=NA),
+        panel.background = element_rect(fill="#0b1220",colour=NA),
         panel.grid       = element_blank(),
         text             = element_text(colour="#e2e8f0"),
         axis.text        = element_text(colour="#94a3b8"),
-        legend.background= element_rect(fill="#1e293b",colour=NA),
+        legend.background= element_rect(fill="#111a2d",colour=NA),
         legend.text      = element_text(colour="#e2e8f0"),
-        plot.title       = element_text(colour="#a78bfa",face="bold"),
+        plot.title       = element_text(colour="#81aad9",face="bold"),
         plot.subtitle    = element_text(colour="#64748b"),
         plot.margin      = margin(10,10,10,10)
       )
-  }, bg="#0f172a")
+  }, bg="#0b1220")
   
   # ── Confusion spikes table ────────────────────────────────────────────────
   output$table_confusion_spikes <- renderDT({

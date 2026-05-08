@@ -60,13 +60,13 @@ render_engagement_timeline <- function(data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      legend.background = element_rect(fill = "#2a2a2a", color = NA),
-      legend.text = element_text(color = "#e0e0e0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      legend.background = element_rect(fill = "#111a2d", color = NA),
+      legend.text = element_text(color = "#f1f5f9"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -92,7 +92,7 @@ render_emotion_distribution <- function(data) {
 
   ggplot(emotion_dist, aes(x = reorder(emotion, -count), y = count, fill = emotion)) +
     geom_col() +
-    geom_text(aes(label = label), vjust = -0.3, color = "#e0e0e0", size = 4) +
+    geom_text(aes(label = label), vjust = -0.3, color = "#f1f5f9", size = 4) +
     scale_fill_manual(
       values = emotion_colors[emotion_dist$emotion],
       guide = "none"
@@ -104,12 +104,12 @@ render_emotion_distribution <- function(data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      axis.text.y = element_text(color = "#a0a0a0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3),
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      axis.text.y = element_text(color = "#94a3b8"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3),
       axis.ticks = element_blank()
     )
 }
@@ -141,11 +141,11 @@ render_confusion_timeline <- function(data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -172,11 +172,11 @@ render_boredom_timeline <- function(data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -214,11 +214,11 @@ render_dominant_emotion_by_student <- function(data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -249,11 +249,11 @@ render_student_engagement_ranking <- function(data, top_n = 15) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -284,11 +284,11 @@ render_confusion_rate_by_student <- function(data, top_n = 10) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -328,13 +328,13 @@ render_engagement_vs_focus_scatter <- function(data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      legend.background = element_rect(fill = "#2a2a2a", color = NA),
-      legend.text = element_text(color = "#e0e0e0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      legend.background = element_rect(fill = "#111a2d", color = NA),
+      legend.text = element_text(color = "#f1f5f9"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -386,13 +386,13 @@ render_weekly_lecture_emotions <- function(emotion_data, lecture_schedule, week_
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      legend.background = element_rect(fill = "#2a2a2a", color = NA),
-      legend.text = element_text(color = "#e0e0e0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      legend.background = element_rect(fill = "#111a2d", color = NA),
+      legend.text = element_text(color = "#f1f5f9"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -438,13 +438,13 @@ render_semester_engagement_trend <- function(emotion_data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      legend.background = element_rect(fill = "#2a2a2a", color = NA),
-      legend.text = element_text(color = "#e0e0e0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      legend.background = element_rect(fill = "#111a2d", color = NA),
+      legend.text = element_text(color = "#f1f5f9"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -488,13 +488,13 @@ render_semester_confusion_trend <- function(emotion_data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      legend.background = element_rect(fill = "#2a2a2a", color = NA),
-      legend.text = element_text(color = "#e0e0e0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      legend.background = element_rect(fill = "#111a2d", color = NA),
+      legend.text = element_text(color = "#f1f5f9"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
 
@@ -527,12 +527,12 @@ render_course_engagement_comparison <- function(emotion_data) {
     ) +
     theme_minimal() +
     theme(
-      plot.background = element_rect(fill = "#1a1a1a", color = NA),
-      panel.background = element_rect(fill = "#2a2a2a", color = NA),
-      text = element_text(color = "#e0e0e0", family = "sans"),
-      axis.text = element_text(color = "#a0a0a0"),
-      legend.background = element_rect(fill = "#2a2a2a", color = NA),
-      legend.text = element_text(color = "#e0e0e0"),
-      panel.grid.major = element_line(color = "#3a3a3a", linewidth = 0.3)
+      plot.background = element_rect(fill = "#0b1220", color = NA),
+      panel.background = element_rect(fill = "#111a2d", color = NA),
+      text = element_text(color = "#f1f5f9", family = "sans"),
+      axis.text = element_text(color = "#94a3b8"),
+      legend.background = element_rect(fill = "#111a2d", color = NA),
+      legend.text = element_text(color = "#f1f5f9"),
+      panel.grid.major = element_line(color = "#1e293b", linewidth = 0.3)
     )
 }
