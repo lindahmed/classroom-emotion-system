@@ -182,13 +182,13 @@ ui <- fluidPage(
       *, *::before, *::after {
         transition: background-color 0.26s ease-out, border-color 0.26s ease-out, color 0.18s ease-out, box-shadow 0.26s ease-out;
       }
-      body { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; margin:0; }
+      body { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; margin:0; font-size:17px; }
       .ep-navbar { background-color: var(--navbar-bg); border-bottom: 1px solid var(--border);
-                   padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
-                   box-shadow: var(--shadow-card); flex-wrap: wrap; }
-      .ep-brand  { color: var(--accent); font-weight: 800; font-size: 1.25rem; margin-right: auto; }
+                   padding: 1rem 2rem; display: flex; align-items: center; gap: 0.5rem;
+                   box-shadow: var(--shadow-card); flex-wrap: wrap; min-height: 76px; }
+      .ep-brand  { color: var(--accent); font-weight: 800; font-size: 1.75rem; margin-right: auto; }
       .ep-nav-link { color: var(--navbar-link); background: none; border: none; cursor: pointer;
-                     font-size: 0.85rem; padding: 4px 10px; border-radius: 10px;
+                     font-size: 1.15rem; padding: 8px 16px; border-radius: 10px; font-weight: 600;
                      transition: color 0.22s ease-out, background 0.22s ease-out; }
       .ep-nav-link:hover { color: var(--navbar-link-hover); background: rgba(129,170,217,0.08); }
       .sidebar { background-color: var(--surface); border-right: 1px solid var(--border);
@@ -196,31 +196,31 @@ ui <- fluidPage(
       .main-panel { background-color: var(--bg); padding: 1.5rem; flex-grow: 1; overflow-y: auto; }
       .ep-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
                  padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-card); }
-      .ep-card-header { color: var(--panel-text); font-weight: 700; font-size: 0.82rem;
+      .ep-card-header { color: var(--panel-text); font-weight: 700; font-size: 0.92rem;
                         text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.85rem; }
       .metric-card { background: var(--surface);
                      border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem;
                      margin-bottom: 0.75rem; transition: border-color 0.22s ease-out, box-shadow 0.22s ease-out;
                      box-shadow: var(--shadow-card); }
       .metric-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-soft); }
-      .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
-      .metric-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase;
+      .metric-value { font-size: 2.2rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+      .metric-label { font-size: 0.82rem; color: var(--muted); text-transform: uppercase;
                       letter-spacing: 0.09em; margin-top: 0.3rem; }
       .metric-icon  { font-size: 1.3rem; margin-bottom: 0.3rem; }
       .week-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; }
       .week-btn { width:100%; background: var(--bg); border:1px solid var(--border); color: var(--muted);
-                  border-radius:10px; padding:5px 2px; font-size:0.72rem; cursor:pointer;
+                  border-radius:10px; padding:5px 2px; font-size:0.82rem; cursor:pointer;
                   transition:all 0.22s ease-out; line-height:1.2; }
       .week-btn:hover  { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
       .week-btn.active { background: var(--accent-strong); border-color: var(--accent-strong); color:#fff; font-weight:700; }
-      .section-title { color: var(--accent); font-size:1.4rem; font-weight:800; margin-bottom:0.2rem; }
+      .section-title { color: var(--accent); font-size:1.6rem; font-weight:800; margin-bottom:0.2rem; }
       .section-sub   { color: var(--muted); font-size:0.88rem; margin-bottom:1.25rem; }
       .week-info-bar { background: var(--surface);
                        border:1px solid var(--border-strong); border-radius:14px;
                        padding:0.65rem 1.2rem; margin-bottom:1.1rem;
                        color: var(--accent); font-weight:700; font-size:0.95rem; }
-      .badge-role { background: var(--surface); color: var(--accent); padding:3px 12px;
-                   border-radius:24px; font-size:0.72rem; font-weight:700; border:1px solid var(--border); }
+      .badge-role { background: var(--surface); color: var(--accent); padding:5px 16px;
+                   border-radius:24px; font-size:0.92rem; font-weight:700; border:1px solid var(--border); }
       .form-label { color: var(--muted); font-size:0.78rem; font-weight:700; letter-spacing:0.05em; display:block; }
       .alert-info    { background: var(--alert-info-bg)!important; border:1px solid var(--alert-info-border)!important;
                        color: var(--alert-info-text)!important; border-radius:14px; padding:0.65rem 1rem; }
@@ -242,28 +242,28 @@ ui <- fluidPage(
                        align-items:center; justify-content:center; z-index:9999; }
       .login-card { background: var(--login-bg); border:1px solid var(--login-border); border-radius:24px;
                     padding:2.5rem; width:100%; max-width:400px; box-shadow:0 25px 60px var(--login-shadow); }
-      .login-logo { color: var(--login-logo); font-size:1.9rem; font-weight:800; text-align:center; margin-bottom:0.2rem; }
+      .login-logo { color: var(--login-logo); font-size:2.2rem; font-weight:800; text-align:center; margin-bottom:0.2rem; }
       .login-sub  { text-align:center; color: var(--muted); font-size:0.88rem; margin-bottom:2rem; }
       .btn-primary { background-color: var(--accent-strong)!important; border-color: var(--accent-strong)!important; color:#fff!important; }
       .btn-primary:hover { background-color: var(--accent)!important; border-color: var(--accent)!important; }
-      .btn-outline-primary { border-color: var(--border)!important; color: var(--muted)!important; background: var(--surface)!important; }
+      .btn-outline-primary { border-color: var(--border)!important; color: var(--muted)!important; background: var(--surface)!important; font-size: 0.95rem!important; }
       .btn-outline-primary:hover { border-color: var(--accent)!important; color: var(--accent)!important; background: var(--surface)!important; }
       hr.ep-hr { border-color: var(--border); margin:0.9rem 0; }
-      h4.sub-section { color: var(--accent-strong); font-size:1rem; font-weight:700;
+      h4.sub-section { color: var(--accent-strong); font-size:1.15rem; font-weight:700;
                         margin-top:1.25rem; margin-bottom:0.75rem; }
       /* ── Theme Toggle Button ─────────────────────────────────────────────── */
       #toggle_theme {
         display: inline-flex !important;
         align-items: center;
         gap: 6px;
-        height: 32px;
-        min-width: 88px;
-        padding: 0 12px !important;
+        height: 40px;
+        min-width: 100px;
+        padding: 0 16px !important;
         border-radius: 999px !important;
         border: 1px solid var(--border) !important;
         background: var(--surface) !important;
         color: var(--muted) !important;
-        font-size: 12px !important;
+        font-size: 14px !important;
         font-weight: 700 !important;
         letter-spacing: 0.04em;
         cursor: pointer;
