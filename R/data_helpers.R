@@ -148,6 +148,9 @@ filter_schedule_by_role <- function(schedule, user_role, user_id = NULL) {
   if (user_role == "Admin") {
     return(schedule)
   } else if (user_role == "Lecturer") {
+    if ("lecturer_id_str" %in% names(schedule)) {
+      return(schedule %>% filter(lecturer_id_str == user_id))
+    }
     return(schedule %>% filter(lecturer_id == user_id))
   }
   data.frame()

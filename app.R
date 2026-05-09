@@ -53,7 +53,8 @@ app_data <- reactiveValues(
   selected_week = 1,
   selected_lecture_id = NULL,
   start_session_request = NULL,
-  live_face_response = NULL
+  live_face_response = NULL,
+  live_attendance = NULL
 )
 
 # Authenticate user via PostgreSQL (email + password)
@@ -281,12 +282,12 @@ ui <- fluidPage(
       "var currentLectureId = null;\n" ,
       "var eduPulseApiToken = null;\n" ,
       "function startMonitorCamera(message) {\n" ,
-      "  currentLectureId = message.lecture_id;\n" ,
       "  var video = document.getElementById('monitor_video');\n" ,
       "  var canvas = document.getElementById('monitor_canvas');\n" ,
       "  var status = document.getElementById('camera_status');\n" ,
       "  if (!video || !canvas || !status) return;\n" ,
       "  if (cameraStream) { stopMonitorCamera(); }\n" ,
+      "  currentLectureId = message.lecture_id;\n" ,
       "  status.innerText = 'Requesting camera access...';\n" ,
       "  navigator.mediaDevices.getUserMedia({ video: true, audio: false })\n" ,
       "    .then(function(stream) {\n" ,
@@ -309,6 +310,7 @@ ui <- fluidPage(
       "  var status = document.getElementById('camera_status');\n      var video = document.getElementById('monitor_video');\n" ,
       "  if (status) status.innerText = 'Camera stopped.';\n" ,
       "  if (video) { video.pause(); video.srcObject = null; }\n" ,
+      "  currentLectureId = null;\n" ,
       "}\n" ,
       "function sendCaptureFrame() {\n" ,
       "  if (!cameraStream || !currentLectureId) return;\n" ,
@@ -328,15 +330,16 @@ ui <- fluidPage(
       "    var headers = {};\n" ,
       "    if (eduPulseApiToken) { headers['Authorization'] = 'Bearer ' + eduPulseApiToken; }\n" ,
       "    fetch('http://localhost:8000/analyze-attendance-frame', { method: 'POST', body: data, headers: headers })\n" ,
-      "      .then(function(response) { return response.json(); })\n" ,
+      "      .then(function(response) { return response.json().then(function(json) { if (!response.ok) { throw new Error(json.detail || 'Capture failed'); } return json; }); })\n" ,
       "      .then(function(json) {\n" ,
       "        Shiny.setInputValue('live_face_response', JSON.stringify(json), { priority: 'event' });\n" ,
       "        var summary = document.getElementById('face_recognition_status');\n" ,
       "        if (summary) {\n" ,
-      "          if (json.recognized === false) {\n" ,
-      "            summary.innerHTML = '<strong>Face status:</strong> Not recognized';\n" ,
+      "          var recognized = Array.isArray(json.recognized) ? json.recognized : [];\n" ,
+      "          if (recognized.length === 0) {\n" ,
+      "            summary.innerHTML = '<strong>Face status:</strong> No enrolled student recognized<br><strong>Faces:</strong> ' + (json.total_faces || 0);\n" ,
       "          } else {\n" ,
-      "            summary.innerHTML = '<strong>Recognized:</strong> ' + json.student_name + ' (' + json.student_id + ')<br><strong>Emotion:</strong> ' + json.emotion + ' (' + Math.round(json.confidence * 100) + '%)';\n" ,
+      "            summary.innerHTML = '<strong>Recognized:</strong> ' + recognized.length + '<br><strong>Present:</strong> ' + (json.present_count || 0) + ' / ' + (json.expected_students || 0);\n" ,
       "          }\n" ,
       "        }\n" ,
       "      })\n" ,
@@ -588,12 +591,19 @@ ui <- fluidPage(
                     div(style = "flex:1 1 280px; min-width:280px;",
                         div(id = "camera_status", class = "alert alert-info", "Camera is idle. Click Start Session to begin."),
                         div(id = "face_recognition_status", class = "alert alert-secondary", "Waiting for recognition results..."),
+                        actionButton("stop_attendance_btn", "Stop Attendance",
+                                     class = "btn btn-sm btn-outline-primary mb-2"),
                         uiOutput("live_face_summary")
                     )
                 ),
                 tags$canvas(id = "monitor_canvas", style = "display:none;")
             ),
-            
+
+            div(class = "ep-card",
+                div(class = "ep-card-header", "Live Attendance"),
+                DTOutput("table_live_attendance")
+            ),
+
             fluidRow(
               column(2, div(class = "metric-card",
                             div(class = "metric-icon", "💡"),
@@ -1046,6 +1056,8 @@ server <- function(input, output, session) {
     app_data$filtered_data       <- NULL
     app_data$selected_week       <- 1
     app_data$selected_lecture_id <- NULL
+    app_data$live_face_response  <- NULL
+    app_data$live_attendance     <- NULL
     
     for (p in ALL_PANELS) shinyjs::hide(paste0("panel_", p))
     shinyjs::show("login_overlay")
@@ -1159,6 +1171,9 @@ server <- function(input, output, session) {
   observeEvent(input$view_lecture_clicked, {
     req(input$view_lecture_clicked)
     app_data$selected_lecture_id <- input$view_lecture_clicked
+    app_data$live_face_response <- NULL
+    attendance <- call_api(paste0("/attendance/", input$view_lecture_clicked), token = app_data$api_token)
+    app_data$live_attendance <- if (!is.null(attendance)) attendance$attendance else NULL
     show_panel("monitor")
     showNotification(paste("Viewing:", input$view_lecture_clicked), type="message", duration=2)
   })
@@ -1188,10 +1203,32 @@ server <- function(input, output, session) {
     if (!is.null(result)) {
       showNotification(paste("Session started for lecture:", lecture_id), type = "success", duration = 3)
       app_data$selected_lecture_id <- lecture_id
+      app_data$live_face_response <- NULL
+      app_data$live_attendance <- result$attendance
       show_panel("monitor")
       session$sendCustomMessage("startCamera", list(lecture_id = lecture_id))
     } else {
       showNotification("Failed to start session. Check if FastAPI is running.", type = "error", duration = 5)
+    }
+  })
+
+  observeEvent(input$stop_attendance_btn, {
+    lid <- app_data$selected_lecture_id
+    if (is.null(lid) || !nzchar(lid)) {
+      showNotification("Select a lecture before stopping attendance.", type = "warning", duration = 3)
+      return()
+    }
+    result <- call_api(
+      paste0("/stop-session/", lid),
+      method = "POST",
+      token = app_data$api_token
+    )
+    session$sendCustomMessage("stopCamera", list())
+    if (!is.null(result)) {
+      app_data$live_attendance <- result$attendance
+      showNotification(paste("Attendance stopped for lecture:", lid), type = "message", duration = 3)
+    } else {
+      showNotification("Failed to stop attendance session.", type = "error", duration = 5)
     }
   })
   
@@ -1248,6 +1285,7 @@ server <- function(input, output, session) {
     
     display <- sched %>%
       mutate(
+        StatusValue = if ("lecture_status" %in% names(.)) lecture_status else status,
         Actions = paste0(
           '<button class="btn btn-sm btn-success" style="font-size:0.72rem;padding:2px 8px;margin-right:4px;" ',
           'onclick="Shiny.setInputValue(\'start_session_clicked\',\'', lecture_id,
@@ -1259,7 +1297,7 @@ server <- function(input, output, session) {
       ) %>%
       select(Actions, Day=day_name, Date=lecture_date, Time=start_time,
              Course=course_code, CourseName=course_name, Group=group_name,
-             Room=room, Students=expected_students, Status=status)
+             Room=room, Students=expected_students, Status=StatusValue)
     
     datatable(display,
               escape    = FALSE,
@@ -1304,12 +1342,21 @@ server <- function(input, output, session) {
     m <- compute_summary_metrics(filtered_data_reactive()); round(m$avg_focus,3)
   })
   output$card_attendance <- renderText({
+    att <- app_data$live_attendance
+    if (!is.null(att) && is.data.frame(att) && nrow(att) > 0) {
+      present <- sum(att$status %in% c("Present", "Returned"), na.rm = TRUE)
+      return(paste0(round((present / nrow(att)) * 100, 1), "%"))
+    }
     m <- compute_summary_metrics(filtered_data_reactive()); paste0(round(m$attendance_rate*100,1),"%")
   })
   output$card_confusion <- renderText({
     m <- compute_summary_metrics(filtered_data_reactive()); paste0(round(m$confusion_rate*100,1),"%")
   })
   output$card_present <- renderText({
+    att <- app_data$live_attendance
+    if (!is.null(att) && is.data.frame(att) && nrow(att) > 0) {
+      return(sum(att$status %in% c("Present", "Returned"), na.rm = TRUE))
+    }
     m <- compute_summary_metrics(filtered_data_reactive()); m$students_present
   })
   output$card_dominant_emotion <- renderText({
@@ -1335,50 +1382,20 @@ server <- function(input, output, session) {
     parsed <- tryCatch(fromJSON(input$live_face_response), error = function(e) NULL)
     if (!is.null(parsed)) {
       app_data$live_face_response <- parsed
+      if (!is.null(parsed$attendance)) {
+        app_data$live_attendance <- parsed$attendance
+      }
 
-      # Persist recognized face data to DB + CSV backup
-      if (!is.null(parsed$recognized) && parsed$recognized != FALSE) {
+      recognized <- parsed$recognized
+      if (is.data.frame(recognized) && nrow(recognized) > 0) {
         lid <- app_data$selected_lecture_id
-        if (!is.null(lid) && nchar(lid) > 0) {
-          tryCatch({
-            # Write emotion record to DB + CSV
-            insert_emotion_record(
-              student_code = parsed$student_id,
-              lecture_code = lid,
-              recorded_at  = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-              emotion      = parsed$emotion %||% "Neutral",
-              confidence   = as.numeric(parsed$confidence %||% 0),
-              engagement_score = as.numeric(parsed$engagement_score %||% 0),
-              focus_score  = as.numeric(parsed$focus_score %||% 0),
-              is_present   = identical(parsed$attendance_status, "Present") || identical(parsed$attendance_status, "Returned"),
-              left_room    = identical(parsed$attendance_status, "Left"),
-              absence_duration_minutes = as.integer(parsed$absence_duration_minutes %||% 0),
-              source       = "live_camera",
-              model_name   = "EduPulse_v1.0"
-            )
-
-            # Upsert attendance to DB + CSV
-            upsert_attendance_record(
-              student_code = parsed$student_id,
-              lecture_code = lid,
-              status       = parsed$attendance_status %||% "Present"
-            )
-
-            # Check for confusion alert
-            check_and_create_confusion_alert(lid)
-
-            # Also write flat row to main CSV backup
-            csv_append_emotion_record(parsed, lid)
-
-            # Update in-memory data so charts refresh immediately
-            new_row <- build_emotion_flat_row(parsed, lid)
-            if (!is.null(app_data$all_data) && nrow(app_data$all_data) > 0) {
-              app_data$all_data <- bind_rows(app_data$all_data, new_row)
-              app_data$filtered_data <- filter_by_role(app_data$all_data, app_data$user_role, app_data$user_id)
-            }
-          }, error = function(e) {
-            message(paste("Failed to persist live frame:", e$message))
-          })
+        for (i in seq_len(nrow(recognized))) {
+          row <- as.list(recognized[i, , drop = FALSE])
+          new_row <- build_emotion_flat_row(row, lid)
+          if (!is.null(app_data$all_data) && nrow(app_data$all_data) > 0) {
+            app_data$all_data <- bind_rows(app_data$all_data, new_row)
+            app_data$filtered_data <- filter_by_role(app_data$all_data, app_data$user_role, app_data$user_id)
+          }
         }
       }
     }
@@ -1388,14 +1405,47 @@ server <- function(input, output, session) {
     res <- app_data$live_face_response
     if (is.null(res)) {
       HTML('<div style="color:#94a3b8;">No frame analyzed yet.</div>')
-    } else if (identical(res$recognized, FALSE)) {
-      HTML('<div><strong>Face status:</strong> Not recognized</div>')
-    } else {
+    } else if (!is.data.frame(res$recognized) || nrow(res$recognized) == 0) {
       HTML(sprintf(
-        '<div><strong>Student:</strong> %s (%s)<br/><strong>Emotion:</strong> %s<br/><strong>Confidence:</strong> %s%%<br/><strong>Attendance:</strong> %s</div>',
-        res$student_name, res$student_id, res$emotion, round(as.numeric(res$confidence) * 100, 1), res$attendance_status
+        '<div><strong>Recognized:</strong> 0<br/><strong>Faces:</strong> %s<br/><strong>Unknown:</strong> %s</div>',
+        res$total_faces %||% 0, res$unknown_count %||% 0
+      ))
+    } else {
+      rows <- apply(res$recognized, 1, function(row) {
+        sprintf(
+          '<div><strong>%s</strong> (%s) — %s, face %s%%</div>',
+          htmlEscape(row[["student_name"]]),
+          htmlEscape(row[["student_id"]]),
+          htmlEscape(row[["emotion"]]),
+          round(as.numeric(row[["face_confidence"]]) * 100, 1)
+        )
+      })
+      HTML(paste0(
+        '<div><strong>Recognized:</strong> ', nrow(res$recognized),
+        '<br/><strong>Present:</strong> ', res$present_count %||% 0,
+        ' / ', res$expected_students %||% 0,
+        '<hr class="ep-hr"/>',
+        paste(rows, collapse = ""),
+        '</div>'
       ))
     }
+  })
+
+  output$table_live_attendance <- renderDT({
+    att <- app_data$live_attendance
+    if (is.null(att) || !is.data.frame(att) || nrow(att) == 0) {
+      return(datatable(data.frame(Message = "Start attendance to see live roster status."),
+                       options = list(dom = "t"), rownames = FALSE))
+    }
+    display <- att %>%
+      select(
+        StudentID = student_id,
+        Student = student_name,
+        Status = status,
+        LastSeen = last_seen_at,
+        AttendancePct = attendance_pct
+      )
+    datatable(display, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE, selection = "none")
   })
   
   # ── Charts (dark theme helper) ────────────────────────────────────────────

@@ -27,4 +27,9 @@ def load_known_students():
                 })
     return students
 
+def refresh_known_students():
+    global KNOWN_STUDENTS
+    KNOWN_STUDENTS = load_known_students()
+    return KNOWN_STUDENTS
+
 KNOWN_STUDENTS = load_known_students()

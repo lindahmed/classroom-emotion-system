@@ -17,6 +17,16 @@ This backend provides face recognition, emotion detection, attendance tracking, 
 - Place student photos (e.g., .jpg) in each folder.
 - **Privacy Warning:** Do not commit real student photos to version control. Use placeholder images or anonymized data for development.
 
+## Importing StudentPicsDataset.csv
+
+Run from the repo root:
+
+```bash
+.venv/bin/python database/import_student_pics.py
+```
+
+This imports numeric student IDs, creates the `FACE101` course, `FACE_G01` group, `FR001`-`FR016` lectures, downloads Google Drive photos into `backend/known_faces/`, and records photo metadata in PostgreSQL.
+
 ## Testing
 
 - Access interactive API docs at http://localhost:8000/docs

@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS alerts CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS login_sessions CASCADE;
+DROP TABLE IF EXISTS attendance_sessions CASCADE;
 DROP TABLE IF EXISTS attendance_records CASCADE;
 DROP TABLE IF EXISTS emotion_records CASCADE;
 DROP TABLE IF EXISTS lectures CASCADE;
@@ -25,6 +26,7 @@ DROP TABLE IF EXISTS group_memberships CASCADE;
 DROP TABLE IF EXISTS student_groups CASCADE;
 DROP TABLE IF EXISTS semester_weeks CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
+DROP TABLE IF EXISTS student_face_photos CASCADE;
 DROP TABLE IF EXISTS students CASCADE;
 DROP TABLE IF EXISTS lecturers CASCADE;
 DROP TABLE IF EXISTS admins CASCADE;
@@ -153,7 +155,7 @@ COMMENT ON TABLE lecturers IS 'Lecturer profiles linked to user accounts';
 CREATE TABLE students (
     student_id       SERIAL PRIMARY KEY,
     user_id          INTEGER NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
-    student_code     VARCHAR(10) NOT NULL UNIQUE,
+    student_code     VARCHAR(20) NOT NULL UNIQUE,
     full_name        VARCHAR(100) NOT NULL,
     department_id    INTEGER REFERENCES departments(department_id) ON DELETE SET NULL,
     enrollment_year  INTEGER,
@@ -164,7 +166,22 @@ CREATE TABLE students (
 );
 COMMENT ON TABLE students IS 'Student profiles linked to user accounts';
 
--- 8. Courses
+-- 8. Student Face Photos
+CREATE TABLE student_face_photos (
+    photo_id         BIGSERIAL PRIMARY KEY,
+    student_id       INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
+    source_url       TEXT NOT NULL,
+    source_file_id   VARCHAR(128),
+    local_path       VARCHAR(500),
+    is_downloaded    BOOLEAN NOT NULL DEFAULT FALSE,
+    download_error   TEXT,
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (student_id, source_url)
+);
+COMMENT ON TABLE student_face_photos IS 'Known-face photo metadata imported from StudentPicsDataset.csv';
+
+-- 9. Courses
 CREATE TABLE courses (
     course_id        SERIAL PRIMARY KEY,
     course_code      VARCHAR(20) NOT NULL UNIQUE,
@@ -178,7 +195,7 @@ CREATE TABLE courses (
 );
 COMMENT ON TABLE courses IS 'Course catalog';
 
--- 9. Semester Weeks
+-- 10. Semester Weeks
 CREATE TABLE semester_weeks (
     week_id          SERIAL PRIMARY KEY,
     semester_id      VARCHAR(20) NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
@@ -194,7 +211,7 @@ CREATE TABLE semester_weeks (
 );
 COMMENT ON TABLE semester_weeks IS 'Week definitions within a semester';
 
--- 10. Student Groups
+-- 11. Student Groups
 CREATE TABLE student_groups (
     group_id         SERIAL PRIMARY KEY,
     group_code       VARCHAR(20) NOT NULL,
@@ -207,7 +224,7 @@ CREATE TABLE student_groups (
 );
 COMMENT ON TABLE student_groups IS 'Student groups/sections per course per semester';
 
--- 11. Group Memberships
+-- 12. Group Memberships
 CREATE TABLE group_memberships (
     membership_id    SERIAL PRIMARY KEY,
     group_id         INTEGER NOT NULL REFERENCES student_groups(group_id) ON DELETE CASCADE,
@@ -218,7 +235,7 @@ CREATE TABLE group_memberships (
 );
 COMMENT ON TABLE group_memberships IS 'Which students belong to which groups';
 
--- 12. Lecturer Course Assignments
+-- 13. Lecturer Course Assignments
 CREATE TABLE lecturer_course_assignments (
     assignment_id    SERIAL PRIMARY KEY,
     lecturer_id      INTEGER NOT NULL REFERENCES lecturers(lecturer_id) ON DELETE CASCADE,
@@ -232,7 +249,7 @@ CREATE TABLE lecturer_course_assignments (
 );
 COMMENT ON TABLE lecturer_course_assignments IS 'Which lecturer teaches which course-group in which semester';
 
--- 13. Lectures
+-- 14. Lectures
 CREATE TABLE lectures (
     lecture_id       SERIAL PRIMARY KEY,
     lecture_code     VARCHAR(10) NOT NULL UNIQUE,
@@ -253,7 +270,7 @@ CREATE TABLE lectures (
 );
 COMMENT ON TABLE lectures IS 'Individual lecture sessions. assignment_id resolves lecturer, course, and group via FK chain.';
 
--- 14. Emotion Records (core fact table)
+-- 15. Emotion Records (core fact table)
 CREATE TABLE emotion_records (
     record_id              BIGSERIAL PRIMARY KEY,
     student_id             INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
@@ -277,7 +294,7 @@ CREATE TABLE emotion_records (
 );
 COMMENT ON TABLE emotion_records IS 'Core emotion detection records. All context resolved via lecture_id -> assignment_id FK chain.';
 
--- 15. Attendance Records
+-- 16. Attendance Records
 CREATE TABLE attendance_records (
     attendance_id           BIGSERIAL PRIMARY KEY,
     student_id              INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
@@ -293,7 +310,22 @@ CREATE TABLE attendance_records (
 );
 COMMENT ON TABLE attendance_records IS 'Per-student per-lecture attendance summary';
 
--- 16. Login Sessions
+-- 17. Attendance Sessions
+CREATE TABLE attendance_sessions (
+    session_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    lecture_id       INTEGER NOT NULL UNIQUE REFERENCES lectures(lecture_id) ON DELETE CASCADE,
+    started_by       INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    started_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    ended_at         TIMESTAMP WITH TIME ZONE,
+    status           VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT chk_attendance_session_status CHECK (status IN ('active', 'completed', 'cancelled')),
+    CONSTRAINT chk_attendance_session_times CHECK (ended_at IS NULL OR ended_at >= started_at)
+);
+COMMENT ON TABLE attendance_sessions IS 'Live attendance camera sessions per lecture';
+
+-- 18. Login Sessions
 CREATE TABLE login_sessions (
     session_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id          INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -306,7 +338,7 @@ CREATE TABLE login_sessions (
 );
 COMMENT ON TABLE login_sessions IS 'Active login sessions for token-based auth';
 
--- 17. Password Reset Tokens
+-- 19. Password Reset Tokens
 CREATE TABLE password_reset_tokens (
     reset_id         SERIAL PRIMARY KEY,
     user_id          INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -316,7 +348,7 @@ CREATE TABLE password_reset_tokens (
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 18. Alerts
+-- 20. Alerts
 CREATE TABLE alerts (
     alert_id              BIGSERIAL PRIMARY KEY,
     lecture_id            INTEGER REFERENCES lectures(lecture_id) ON DELETE CASCADE,
@@ -334,7 +366,7 @@ CREATE TABLE alerts (
 );
 COMMENT ON TABLE alerts IS 'Confusion spike alerts, low engagement warnings, system notifications';
 
--- 19. Alert Recipients
+-- 21. Alert Recipients
 CREATE TABLE alert_recipients (
     recipient_id     BIGSERIAL PRIMARY KEY,
     alert_id         BIGINT NOT NULL REFERENCES alerts(alert_id) ON DELETE CASCADE,
@@ -345,7 +377,7 @@ CREATE TABLE alert_recipients (
     UNIQUE (alert_id, user_id)
 );
 
--- 20. Reports
+-- 22. Reports
 CREATE TABLE reports (
     report_id        SERIAL PRIMARY KEY,
     generated_by     INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -360,7 +392,7 @@ CREATE TABLE reports (
 );
 COMMENT ON TABLE reports IS 'Generated reports with metadata';
 
--- 21. Audit Log
+-- 23. Audit Log
 CREATE TABLE audit_log (
     log_id           BIGSERIAL PRIMARY KEY,
     user_id          INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
@@ -374,7 +406,7 @@ CREATE TABLE audit_log (
 );
 COMMENT ON TABLE audit_log IS 'Immutable audit trail of important system actions';
 
--- 22. System Settings
+-- 24. System Settings
 CREATE TABLE system_settings (
     setting_id       SERIAL PRIMARY KEY,
     setting_key      VARCHAR(100) NOT NULL UNIQUE,
@@ -410,6 +442,12 @@ CREATE INDEX idx_lectures_semester_week_status ON lectures(semester_id, academic
 -- Attendance
 CREATE INDEX idx_attendance_lecture_id ON attendance_records(lecture_id);
 CREATE INDEX idx_attendance_student_id ON attendance_records(student_id);
+CREATE INDEX idx_attendance_sessions_lecture ON attendance_sessions(lecture_id);
+CREATE INDEX idx_attendance_sessions_status ON attendance_sessions(status);
+
+-- Face photos
+CREATE INDEX idx_student_face_photos_student ON student_face_photos(student_id);
+CREATE INDEX idx_student_face_photos_file_id ON student_face_photos(source_file_id);
 
 -- Login sessions
 CREATE INDEX idx_sessions_user_id ON login_sessions(user_id);
