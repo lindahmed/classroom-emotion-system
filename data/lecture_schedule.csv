@@ -1,1 +1,33 @@
-lecture_id,lecture_id_str,lecture_name,semester_id,academic_week,lecture_date,day_name,start_time,end_time,lecture_status,course_id,course_code,course_name,group_id,group_code,group_name,lecturer_id,lecturer_id_str,lecturer_name,room,expected_students
+lecture_id,lecture_name,semester_id,academic_week,lecture_date,day_name,start_time,end_time,course_id,course_code,course_name,group_id,group_code,group_name,lecturer_id,lecturer_name,room,expected_students,status,lecture_db_id,lecturer_db_id
+Lb798b3c75,CS301 — GRP_A_CS301 (Week 16),SPRING2026,16,2026-05-25,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,16,2
+Lf342b0ca7,CS301 — GRP_A_CS301 (Week 15),SPRING2026,15,2026-05-18,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,15,2
+L6668652b8,CS301 — GRP_A_CS301 (Week 14),SPRING2026,14,2026-05-11,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,14,2
+L8add99619,CS301 — GRP_A_CS301 (Week 13),SPRING2026,13,2026-05-04,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,13,2
+L9f4cb4f54,CS301 — GRP_A_CS301 (Week 12),SPRING2026,12,2026-04-27,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,12,2
+L8e0184bb5,CS301 — GRP_A_CS301 (Week 11),SPRING2026,11,2026-04-20,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,11,2
+Lbf66f5502,CS301 — GRP_A_CS301 (Week 10),SPRING2026,10,2026-04-13,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,10,2
+L60f55a1c3,CS301 — GRP_A_CS301 (Week 9),SPRING2026,9,2026-04-06,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,9,2
+Lebc594836,CS301 — GRP_A_CS301 (Week 8),SPRING2026,8,2026-03-30,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,8,2
+Le796247ed,CS301 — GRP_A_CS301 (Week 7),SPRING2026,7,2026-03-23,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,7,2
+Lf65240d6e,CS301 — GRP_A_CS301 (Week 6),SPRING2026,6,2026-03-16,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,6,2
+Lf311b2ddd,CS301 — GRP_A_CS301 (Week 5),SPRING2026,5,2026-03-09,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,5,2
+L9e1f3aa1c,CS301 — GRP_A_CS301 (Week 4),SPRING2026,4,2026-03-02,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,4,2
+Lfcf88820e,CS301 — GRP_A_CS301 (Week 3),SPRING2026,3,2026-02-23,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,3,2
+Lbda5b8140,CS301 — GRP_A_CS301 (Week 2),SPRING2026,2,2026-02-16,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,2,2
+Lbc5f9ac04,CS301 — GRP_A_CS301 (Week 1),SPRING2026,1,2026-02-09,Monday,10:00,11:30,1,CS301,Artificial Intelligence,1,GRP_A_CS301,Group A - CS301,L002,Ahmed Mohamed,Room 204,1,scheduled,1,2
+Lc407adf14,CS302 — GRP_A_CS302 (Week 16),SPRING2026,16,2026-05-25,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,32,3
+Lc177fb573,CS302 — GRP_A_CS302 (Week 15),SPRING2026,15,2026-05-18,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,31,3
+L01b28a9f1,CS302 — GRP_A_CS302 (Week 14),SPRING2026,14,2026-05-11,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,30,3
+L6a39501e6,CS302 — GRP_A_CS302 (Week 13),SPRING2026,13,2026-05-04,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,29,3
+L7ede401e2,CS302 — GRP_A_CS302 (Week 12),SPRING2026,12,2026-04-27,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,28,3
+La7269ca56,CS302 — GRP_A_CS302 (Week 11),SPRING2026,11,2026-04-20,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,27,3
+L05fecaffc,CS302 — GRP_A_CS302 (Week 10),SPRING2026,10,2026-04-13,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,26,3
+Lb4d5be5fd,CS302 — GRP_A_CS302 (Week 9),SPRING2026,9,2026-04-06,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,25,3
+Ldb00faee8,CS302 — GRP_A_CS302 (Week 8),SPRING2026,8,2026-03-30,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,24,3
+L8b738da8b,CS302 — GRP_A_CS302 (Week 7),SPRING2026,7,2026-03-23,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,23,3
+L09f9b2065,CS302 — GRP_A_CS302 (Week 6),SPRING2026,6,2026-03-16,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,22,3
+L44994ecfe,CS302 — GRP_A_CS302 (Week 5),SPRING2026,5,2026-03-09,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,21,3
+Lf50549c18,CS302 — GRP_A_CS302 (Week 4),SPRING2026,4,2026-03-02,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,20,3
+L3e98f33e1,CS302 — GRP_A_CS302 (Week 3),SPRING2026,3,2026-02-23,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,19,3
+L3dcd1e5d2,CS302 — GRP_A_CS302 (Week 2),SPRING2026,2,2026-02-16,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,18,3
+Lc352ea6f6,CS302 — GRP_A_CS302 (Week 1),SPRING2026,1,2026-02-09,Monday,10:00,11:30,2,CS302,Data Science Fundamentals,3,GRP_A_CS302,Group A - CS302,L004,mina youssef,Room 204,1,scheduled,17,3

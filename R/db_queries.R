@@ -38,7 +38,10 @@ load_emotion_data <- function(semester_id = "SPRING2026",
 
 #' Load lecture schedule (replaces readr::read_csv("data/lecture_schedule.csv"))
 load_lecture_schedule <- function(semester_id = "SPRING2026") {
-  db_query("SELECT * FROM vw_lecture_schedule WHERE 1=1", list())
+  db_query(
+    "SELECT * FROM vw_lecture_schedule WHERE semester_id = $1 ORDER BY academic_week, lecture_date, start_time",
+    list(semester_id)
+  )
 }
 
 #' Load semester weeks
@@ -52,6 +55,23 @@ load_semester_weeks <- function(semester_id = "SPRING2026") {
 #' Load courses
 load_courses <- function() {
   db_query("SELECT course_id, course_code, course_name, department_id, credit_hours FROM courses ORDER BY course_code")
+}
+
+#' Load rooms
+load_rooms <- function() {
+  db_query(
+    "SELECT room_id, room_number, building, capacity FROM rooms ORDER BY room_number",
+    list()
+  )
+}
+
+#' Get active semester_id
+get_active_semester_id <- function(default = "SPRING2026") {
+  res <- db_query(
+    "SELECT semester_id FROM semesters WHERE is_active = TRUE ORDER BY start_date DESC LIMIT 1",
+    list()
+  )
+  if (nrow(res) > 0) as.character(res$semester_id[1]) else default
 }
 
 #' Load student groups
@@ -80,7 +100,7 @@ get_students_in_group <- function(group_id) {
 get_lectures_for_lecturer <- function(lecturer_code, semester_id = "SPRING2026") {
   db_query(
     "SELECT * FROM vw_lecture_schedule
-     WHERE lecturer_id_str = $1 AND semester_id = $2
+     WHERE lecturer_id = $1 AND semester_id = $2
      ORDER BY academic_week, lecture_date, start_time",
     list(lecturer_code, semester_id)
   )

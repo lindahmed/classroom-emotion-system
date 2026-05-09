@@ -3,11 +3,16 @@ database.py — PostgreSQL connection pool for EduPulse AI FastAPI backend
 """
 
 import os
+import logging
+import re
 import psycopg2
 from psycopg2 import pool
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+
+
+logger = logging.getLogger(__name__)
 
 
 def _load_env_file():
@@ -59,11 +64,8 @@ _connection_pool = None
 def init_db():
     """Initialize the connection pool. Call at FastAPI startup."""
     global _connection_pool
-    
-    print(f"\n{'='*60}")
-    print("STARTUP: Connecting to PostgreSQL...")
-    print(f"Config: host={DB_CONFIG['host']}, port={DB_CONFIG['port']}, dbname={DB_CONFIG['dbname']}, user={DB_CONFIG['user']}")
-    print(f"{'='*60}\n")
+
+    logger.info("Connecting to PostgreSQL (host=%s port=%s dbname=%s user=%s)", DB_CONFIG["host"], DB_CONFIG["port"], DB_CONFIG["dbname"], DB_CONFIG["user"])
     
     try:
         _connection_pool = pool.ThreadedConnectionPool(
@@ -71,16 +73,9 @@ def init_db():
             maxconn=10,
             **DB_CONFIG
         )
-        print("✓ Connection pool created successfully")
+        logger.info("Connection pool created successfully")
     except psycopg2.OperationalError as e:
-        print(f"✗ Database connection failed: {e}")
-        print(f"\nPlease ensure:")
-        print(f"  1. PostgreSQL is running on {DB_CONFIG['host']}:{DB_CONFIG['port']}")
-        print(f"  2. Database '{DB_CONFIG['dbname']}' exists")
-        print(f"  3. User '{DB_CONFIG['user']}' has access")
-        print(f"  4. Password is correct (if required)")
-        print(f"\nTo create the database, run:")
-        print(f"  CREATE DATABASE {DB_CONFIG['dbname']};")
+        logger.exception("Database connection failed: %s", e)
         raise
     
     ensure_auth_schema()
@@ -123,11 +118,25 @@ def execute_query(sql, params=None, fetch=True):
             return cur.rowcount
 
 
-def execute_insert(sql, params=None):
-    """Execute an INSERT and return the generated ID."""
+def execute_insert(sql, params=None, returning: str = "record_id"):
+    """Execute an INSERT and return a generated ID (optional).
+
+    Notes:
+      - Historically this helper appended `RETURNING record_id` unconditionally, which
+        breaks inserts into tables whose PK is not `record_id` (e.g. `alert_id`, `user_id`).
+      - If `sql` already includes a RETURNING clause, we do not append another.
+      - If `returning` is falsy (None/""), the INSERT runs and returns None.
+    """
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(sql + " RETURNING record_id", params)
+            normalized_sql = sql.strip().rstrip(";")
+            if not returning:
+                cur.execute(normalized_sql, params)
+                return None
+
+            has_returning = re.search(r"\breturning\b", normalized_sql, re.IGNORECASE) is not None
+            final_sql = normalized_sql if has_returning else f"{normalized_sql} RETURNING {returning}"
+            cur.execute(final_sql, params)
             result = cur.fetchone()
             return result[0] if result else None
 
@@ -158,8 +167,7 @@ def ensure_auth_schema():
             missing_tables = sorted(required_tables - existing_tables)
             
             if missing_tables:
-                print(f"\n⚠ Missing tables: {', '.join(missing_tables)}")
-                print("Creating schema from database/schema.sql...")
+                logger.warning("Missing tables: %s. Creating schema from database/schema.sql...", ", ".join(missing_tables))
                 
                 schema_path = Path(__file__).resolve().parent.parent / "database" / "schema.sql"
                 if not schema_path.exists():
@@ -171,11 +179,11 @@ def ensure_auth_schema():
                 try:
                     schema_sql = schema_path.read_text(encoding="utf-8")
                     cur.execute(schema_sql)
-                    print("✓ Schema created successfully\n")
+                    logger.info("Schema created successfully")
                 except Exception as e:
                     raise RuntimeError(f"Failed to create schema: {e}")
             else:
-                print("✓ All required tables exist\n")
+                logger.info("All required tables exist")
 
             # Ensure institution_id column exists
             try:
@@ -188,7 +196,27 @@ def ensure_auth_schema():
                     """
                 )
             except Exception as e:
-                print(f"Note: Could not add institution_id column: {e}")
+                logger.warning("Could not add institution_id column: %s", e)
+
+            # Session start persistence (for time_minute across restarts)
+            # Safe to create even if the full analytics schema is not present.
+            try:
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS lecture_sessions (
+                        session_id   BIGSERIAL PRIMARY KEY,
+                        lecture_id   INTEGER NOT NULL REFERENCES lectures(lecture_id) ON DELETE CASCADE,
+                        started_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        ended_at     TIMESTAMP WITH TIME ZONE,
+                        status       TEXT NOT NULL DEFAULT 'started',
+                        created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        UNIQUE (lecture_id)
+                    )
+                    """
+                )
+            except Exception as e:
+                # If lectures table doesn't exist (auth-only DB), ignore.
+                logger.debug("Skipping lecture_sessions creation: %s", e)
     
     # Apply seed data
     apply_seed_data()
@@ -203,12 +231,12 @@ def apply_seed_data():
             user_count = cur.fetchone()[0]
             
             if user_count == 0:
-                print("Applying seed data...")
+                logger.info("Applying seed data...")
                 seed_path = Path(__file__).resolve().parent.parent / "database" / "seed.sql"
                 if seed_path.exists():
                     try:
                         seed_sql = seed_path.read_text(encoding="utf-8")
                         cur.execute(seed_sql)
-                        print("Seed data applied successfully\n")
+                        logger.info("Seed data applied successfully")
                     except Exception as e:
-                        print(f"Warning: Seed data application had issues: {e}\n")
+                        logger.warning("Seed data application had issues: %s", e)

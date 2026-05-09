@@ -29,6 +29,18 @@ load_lecture_schedule_csv <- function(path = "data/lecture_schedule.csv") {
     generate_lecture_schedule(path)
   }
   df <- readr::read_csv(path, show_col_types = FALSE)
+
+  # Backward-compatible column mapping (older CSVs had *_str and lecture_status)
+  if (("lecture_status" %in% names(df)) && !("status" %in% names(df))) {
+    df <- dplyr::rename(df, status = lecture_status)
+  }
+  if (("lecturer_id_str" %in% names(df)) && !("lecturer_id" %in% names(df))) {
+    df <- dplyr::rename(df, lecturer_id = lecturer_id_str)
+  }
+  if (("lecture_id_str" %in% names(df)) && !("lecture_id" %in% names(df))) {
+    df <- dplyr::rename(df, lecture_id = lecture_id_str)
+  }
+
   df <- df %>%
     mutate(
       lecture_date = as.Date(lecture_date),

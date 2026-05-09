@@ -24,12 +24,14 @@ source("R/csv_backup.R")
 
 # Initialize database pool on app start
 # (conditional — falls back to CSV if DB unavailable)
+.db_init_error <- NULL
 .try_db_init <- if (isTRUE(USE_DATABASE)) {
   tryCatch({
     get_db_pool()
     ensure_auth_schema()
     TRUE
   }, error = function(e) {
+    .db_init_error <<- e$message
     message(paste("Database not available, using CSV fallback:", e$message))
     FALSE
   })
@@ -393,13 +395,16 @@ ui <- fluidPage(
       actionButton("login_btn", "Sign In", class = "btn btn-primary w-100",
                    style = "padding:0.6rem; font-weight:700; font-size:1rem;"
       ),
+      div(style = "display:flex; justify-content:space-between; margin-top:0.85rem; gap:0.75rem;",
+          actionLink("forgot_password_link", "Forgot password?",
+                     style = "color: var(--accent-strong); font-weight:600; font-size:0.9rem; text-decoration:none;"),
+          actionLink("show_signup", "Don't have an account? Sign Up",
+                     style = "color: var(--accent-strong); font-weight:600; font-size:0.9rem; text-decoration:none;")
+      )
+      ,
       shinyjs::hidden(
         div(id = "login_error", class = "alert alert-warning mt-3 small mb-0",
             "Invalid email or password.")
-      ),
-      div(style = "text-align:center; margin-top:1rem;",
-          actionLink("show_signup", "Don't have an account? Sign Up",
-                     style = "color: var(--accent-strong); font-weight:600; font-size:0.9rem; text-decoration:none;")
       )
     ),
     # Sign-up card
@@ -422,6 +427,7 @@ ui <- fluidPage(
               selected = "student"
             )
         ),
+        uiOutput("signup_lecturer_setup"),
         div(class = "mb-3",
             tags$label("Institution ID", class = "form-label"),
             textInput("signup_institution_id", NULL, placeholder = "e.g., S12345, L12345, A12345")
@@ -455,6 +461,54 @@ ui <- fluidPage(
       )
     )
   ),
+  
+  # ── Forgot Password Modal (login overlay) ──────────────────────────────────
+  shinyjs::hidden(div(
+    id = "forgot_password_modal",
+    style = paste(
+      "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);",
+      "background:var(--surface); border:1px solid var(--border);",
+      "border-radius:12px; padding:2rem; z-index:9999; width:90%; max-width:420px;",
+      "box-shadow: 0 10px 40px rgba(0,0,0,0.3);"
+    ),
+    h3("🔑 Reset Password", style = "margin-top:0; margin-bottom:1.5rem;"),
+    div(id = "fp_step1", style = "display:block;",
+        p(style = "color:var(--muted); font-size:0.9rem;", "Enter your email address to receive a verification code."),
+        div(class = "mb-3",
+            tags$label("Email Address", class = "form-label"),
+            textInput("fp_email", NULL, value = "", placeholder = "your@email.com")
+        ),
+        actionButton("fp_request_code_btn", "Send Verification Code",
+                     class = "btn btn-primary w-100")
+    ),
+    div(id = "fp_step2", style = "display:none;",
+        p(style = "color:var(--muted); font-size:0.9rem;", "Enter the code from your email and set a new password."),
+        div(class = "mb-3",
+            tags$label("Verification Code (6 digits)", class = "form-label"),
+            htmltools::tagAppendAttributes(
+              textInput("fp_code", NULL, value = "", placeholder = "000000"),
+              maxlength = 6,
+              inputmode = "numeric",
+              pattern = "[0-9]*"
+            )
+        ),
+        div(class = "mb-3",
+            tags$label("New Password", class = "form-label"),
+            passwordInput("fp_new_password", NULL, value = "", placeholder = "8+ characters")
+        ),
+        actionButton("fp_verify_btn", "Verify & Reset Password",
+                     class = "btn btn-primary w-100")
+    ),
+    div(id = "fp_message", style = "margin-top:1rem; padding:0.75rem; border-radius:6px; display:none; font-size:0.9rem;"),
+    div(style = "display:flex; gap:0.5rem; margin-top:1.5rem; justify-content:flex-end;",
+        actionButton("fp_cancel_btn", "Cancel",
+                     class = "btn btn-secondary btn-sm")
+    )
+  )),
+  div(id = "auth_modal_overlay", style = paste(
+    "position:fixed; top:0; left:0; width:100%; height:100%;",
+    "background:rgba(0,0,0,0.5); z-index:9998; display:none;"
+  )),
   
   # ── Main app (hidden until login) ──────────────────────────────────────────
   shinyjs::hidden(
@@ -756,7 +810,7 @@ ui <- fluidPage(
               column(6, div(class = "ep-card",
                             div(class = "ep-card-header", "Change Password"),
                             p(style = "color: var(--muted); font-size:0.82rem; margin-bottom:1rem;",
-                              "Request a password change with email verification."),
+                              "Change your password using your current password."),
                             actionButton("change_password_btn", "🔐 Change Password",
                                          class = "btn btn-warning btn-sm"),
                             div(id = "change_password_status", style = "margin-top:0.5rem; color:var(--muted); font-size:0.85rem;")
@@ -780,7 +834,7 @@ ui <- fluidPage(
             )
           )),
           
-          # ── Change Password Modal ──────────────────────────────────────────
+          # ── Change Password Modal (logged-in) ─────────────────────────────
           shinyjs::hidden(div(
             id = "change_password_modal",
             style = paste(
@@ -790,31 +844,21 @@ ui <- fluidPage(
               "box-shadow: 0 10px 40px rgba(0,0,0,0.3);"
             ),
             h3("🔐 Change Password", style = "margin-top:0; margin-bottom:1.5rem;"),
-            div(id = "cp_step1", style = "display:block;",
-                p(style = "color:var(--muted); font-size:0.9rem;", "Enter your email address to receive a verification code."),
+            div(id = "cp_inapp", style = "display:block;",
+                p(style = "color:var(--muted); font-size:0.9rem;", "Enter your current password and choose a new password."),
                 div(class = "mb-3",
-                    tags$label("Email Address", class = "form-label"),
-                    textInput("cp_email", NULL, value = "", placeholder = "your@email.com")
-                ),
-                actionButton("cp_request_code_btn", "Send Verification Code",
-                             class = "btn btn-primary w-100")
-            ),
-            div(id = "cp_step2", style = "display:none;",
-                p(style = "color:var(--muted); font-size:0.9rem;", "Enter the verification code sent to your email and create a new password."),
-                div(class = "mb-3",
-                    tags$label("Verification Code (6 digits)", class = "form-label"),
-                    htmltools::tagAppendAttributes(
-                      textInput("cp_code", NULL, value = "", placeholder = "000000"),
-                      maxlength = 6,
-                      inputmode = "numeric",
-                      pattern = "[0-9]*"
-                    )
+                    tags$label("Current Password", class = "form-label"),
+                    passwordInput("cp_old_password", NULL, value = "", placeholder = "Current password")
                 ),
                 div(class = "mb-3",
                     tags$label("New Password", class = "form-label"),
                     passwordInput("cp_new_password", NULL, value = "", placeholder = "8+ characters")
                 ),
-                actionButton("cp_verify_btn", "Verify & Change Password",
+                div(class = "mb-3",
+                    tags$label("Confirm New Password", class = "form-label"),
+                    passwordInput("cp_new_password_confirm", NULL, value = "", placeholder = "Re-enter new password")
+                ),
+                actionButton("cp_change_inapp_btn", "Update Password",
                              class = "btn btn-primary w-100")
             ),
             div(id = "cp_message", style = "margin-top:1rem; padding:0.75rem; border-radius:6px; display:none; font-size:0.9rem;"),
@@ -838,6 +882,20 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   is_logged_in <- reactiveVal(FALSE)
+
+  # Show the actual DB init error in the UI (otherwise users only see "DB not available").
+  db_init_notified <- reactiveVal(FALSE)
+  observe({
+    if (db_init_notified()) return()
+    if (isTRUE(USE_DATABASE) && !isTRUE(.try_db_init)) {
+      db_init_notified(TRUE)
+      msg <- "Database init failed — using CSV fallback."
+      if (!is.null(.db_init_error) && nzchar(.db_init_error)) {
+        msg <- paste0(msg, " ", .db_init_error)
+      }
+      showNotification(msg, type = "error", duration = NULL)
+    }
+  })
   
   ALL_PANELS <- c("dashboard","monitor","report","graphs","confusion","groups","attendance","settings")
   
@@ -981,6 +1039,134 @@ server <- function(input, output, session) {
     shinyjs::hide("signup_success")
   })
 
+  # ── Lecturer signup: courses + weekly schedule ───────────────────────────
+  output$signup_lecturer_setup <- renderUI({
+    if (is.null(input$signup_role) || input$signup_role != "lecturer") return(NULL)
+
+    if (!.try_db_init) {
+      msg <- "Database not available — cannot configure lecturer courses."
+      if (!is.null(.db_init_error) && nzchar(.db_init_error)) {
+        msg <- paste0(msg, " (", .db_init_error, ")")
+      }
+      return(div(class = "mb-3", tags$small(msg)))
+    }
+
+    courses <- tryCatch(load_courses(), error = function(e) tibble::tibble())
+    rooms   <- tryCatch(load_rooms(),   error = function(e) tibble::tibble())
+
+    course_choices <- if (nrow(courses) > 0) {
+      stats::setNames(
+        as.character(courses$course_id),
+        paste0(courses$course_code, " — ", courses$course_name)
+      )
+    } else {
+      c()
+    }
+
+    room_choices <- if (nrow(rooms) > 0) {
+      stats::setNames(
+        as.character(rooms$room_id),
+        ifelse(is.na(rooms$building) | rooms$building == "", rooms$room_number, paste0(rooms$room_number, " (", rooms$building, ")"))
+      )
+    } else {
+      c()
+    }
+
+    tagList(
+      div(class = "mb-3",
+          tags$label("Courses you teach", class = "form-label"),
+          selectizeInput(
+            "signup_courses",
+            NULL,
+            choices = course_choices,
+            multiple = TRUE,
+            options = list(placeholder = "Select one or more courses")
+          ),
+          tags$small("For each selected course, set the group, day, time and room.", class = "text-muted")
+      ),
+      uiOutput("signup_courses_schedule_ui"),
+      shinyjs::hidden(div(id = "signup_lecturer_error", class = "alert alert-warning mt-2 small mb-0", ""))
+    )
+  })
+
+  output$signup_courses_schedule_ui <- renderUI({
+    if (is.null(input$signup_role) || input$signup_role != "lecturer") return(NULL)
+    if (is.null(input$signup_courses) || length(input$signup_courses) == 0) return(NULL)
+
+    sem_id  <- tryCatch(get_active_semester_id(), error = function(e) "SPRING2026")
+    courses <- tryCatch(load_courses(),          error = function(e) tibble::tibble())
+    groups  <- tryCatch(load_groups(sem_id),     error = function(e) tibble::tibble())
+    rooms   <- tryCatch(load_rooms(),           error = function(e) tibble::tibble())
+
+    room_choices <- if (nrow(rooms) > 0) {
+      stats::setNames(
+        as.character(rooms$room_id),
+        ifelse(is.na(rooms$building) | rooms$building == "", rooms$room_number, paste0(rooms$room_number, " (", rooms$building, ")"))
+      )
+    } else {
+      c()
+    }
+
+    day_choices <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+    tagList(
+      lapply(as.character(input$signup_courses), function(course_id_chr) {
+        course_id <- suppressWarnings(as.integer(course_id_chr))
+        g <- groups
+        if (nrow(g) > 0 && !is.na(course_id)) {
+          g <- g[g$course_id == course_id, , drop = FALSE]
+        }
+
+        group_choices <- if (nrow(g) > 0) {
+          stats::setNames(as.character(g$group_id), paste0(g$group_code, " — ", g$group_name))
+        } else {
+          c()
+        }
+
+        div(
+          class = "mb-3 p-2",
+          style = "border: 1px solid rgba(0,0,0,0.1); border-radius: 8px;",
+          tags$div(style = "font-weight:700; margin-bottom: 0.5rem;",
+                   {
+                     label <- course_id_chr
+                     if (nrow(courses) > 0 && !is.na(course_id)) {
+                       c_row <- courses[courses$course_id == course_id, , drop = FALSE]
+                       if (nrow(c_row) > 0) {
+                         label <- paste0(c_row$course_code[1], " — ", c_row$course_name[1])
+                       }
+                     }
+                     paste0("Schedule: ", label)
+                   }),
+          div(class = "row",
+              div(class = "col-12 col-md-6 mb-2",
+                  tags$label("Group", class = "form-label"),
+                  selectInput(paste0("signup_group_", course_id_chr), NULL, choices = group_choices)
+              ),
+              div(class = "col-12 col-md-6 mb-2",
+                  tags$label("Day", class = "form-label"),
+                  selectInput(paste0("signup_day_", course_id_chr), NULL, choices = day_choices, selected = "Monday")
+              )
+          ),
+          div(class = "row",
+              div(class = "col-6 col-md-3 mb-2",
+                  tags$label("Start (HH:MM)", class = "form-label"),
+                  textInput(paste0("signup_start_", course_id_chr), NULL, value = "10:00")
+              ),
+              div(class = "col-6 col-md-3 mb-2",
+                  tags$label("End (HH:MM)", class = "form-label"),
+                  textInput(paste0("signup_end_", course_id_chr), NULL, value = "11:30")
+              ),
+              div(class = "col-12 col-md-6 mb-2",
+                  tags$label("Room", class = "form-label"),
+                  selectInput(paste0("signup_room_", course_id_chr), NULL, choices = room_choices)
+              )
+          )
+        )
+      }),
+      tags$small("Time format must be 24h HH:MM (e.g., 09:00).", class = "text-muted")
+    )
+  })
+
   # ── Sign-up handler ──────────────────────────────────────────────────────
   observeEvent(input$signup_btn, {
     shinyjs::hide("signup_success")
@@ -992,20 +1178,71 @@ server <- function(input, output, session) {
       return()
     }
 
+    teaching_assignments <- NULL
+
+    if (isTRUE(.try_db_init) && identical(input$signup_role, "lecturer")) {
+      if (is.null(input$signup_courses) || length(input$signup_courses) == 0) {
+        shinyjs::html("signup_lecturer_error", "Please select at least one course.")
+        shinyjs::show("signup_lecturer_error")
+        return()
+      }
+
+      # Build lecturer assignments table
+      rows <- list()
+      for (course_id_chr in as.character(input$signup_courses)) {
+        group_val <- input[[paste0("signup_group_", course_id_chr)]]
+        day_val   <- input[[paste0("signup_day_", course_id_chr)]]
+        start_val <- input[[paste0("signup_start_", course_id_chr)]]
+        end_val   <- input[[paste0("signup_end_", course_id_chr)]]
+        room_val  <- input[[paste0("signup_room_", course_id_chr)]]
+
+        if (is.null(group_val) || !nzchar(group_val)) {
+          shinyjs::html("signup_lecturer_error", paste0("Please choose a group for course ", course_id_chr, "."))
+          shinyjs::show("signup_lecturer_error")
+          return()
+        }
+
+        time_ok <- function(x) is.character(x) && grepl("^\\d{2}:\\d{2}$", x)
+        if (!time_ok(start_val) || !time_ok(end_val)) {
+          shinyjs::html("signup_lecturer_error", paste0("Invalid time for course ", course_id_chr, ". Use HH:MM (e.g., 09:00)."))
+          shinyjs::show("signup_lecturer_error")
+          return()
+        }
+
+        rows[[length(rows) + 1]] <- data.frame(
+          course_id  = as.integer(course_id_chr),
+          group_id   = as.integer(group_val),
+          day_name   = as.character(day_val),
+          start_time = as.character(start_val),
+          end_time   = as.character(end_val),
+          room_id    = as.integer(room_val),
+          stringsAsFactors = FALSE
+        )
+      }
+
+      teaching_assignments <- dplyr::bind_rows(rows)
+      shinyjs::hide("signup_lecturer_error")
+    }
+
     if (.try_db_init) {
       result <- tryCatch({
         register_account_pg(
-          email          = input$signup_email,
-          password       = input$signup_password,
-          full_name      = input$signup_name,
-          role           = input$signup_role,
-          institution_id = input$signup_institution_id
+          email               = input$signup_email,
+          password            = input$signup_password,
+          full_name           = input$signup_name,
+          role                = input$signup_role,
+          institution_id      = input$signup_institution_id,
+          teaching_assignments = teaching_assignments
         )
       }, error = function(e) {
         list(error = paste("Registration failed:", e$message))
       })
     } else {
-      result <- list(error = "Database not available. Cannot register.")
+      msg <- "Database not available. Cannot register."
+      if (!is.null(.db_init_error) && nzchar(.db_init_error)) {
+        msg <- paste0(msg, " (", .db_init_error, ")")
+      }
+      result <- list(error = msg)
     }
 
     if (!is.null(result$error)) {
@@ -1058,81 +1295,46 @@ server <- function(input, output, session) {
   observeEvent(input$change_password_btn, {
     shinyjs::show("cp_modal_overlay")
     shinyjs::show("change_password_modal")
-    shinyjs::show("cp_step1")
-    shinyjs::hide("cp_step2")
     shinyjs::hide("cp_message")
-    updateTextInput(session, "cp_email", value = app_data$user_email)
-    updateTextInput(session, "cp_code", value = "")
+    updateTextInput(session, "cp_old_password", value = "")
     updateTextInput(session, "cp_new_password", value = "")
+    updateTextInput(session, "cp_new_password_confirm", value = "")
   })
   
-  # ── Change Password: Request Code ─────────────────────────────────────────
-  observeEvent(input$cp_request_code_btn, {
-    email <- trimws(input$cp_email)
-    if (!nzchar(email)) {
+  # ── Change Password: Logged-in (old + new) ────────────────────────────────
+  observeEvent(input$cp_change_inapp_btn, {
+    old_pw <- input$cp_old_password
+    new_pw <- input$cp_new_password
+    new_pw2 <- input$cp_new_password_confirm
+
+    if (!nzchar(old_pw) || !nzchar(new_pw) || !nzchar(new_pw2)) {
       shinyjs::show("cp_message")
-      shinyjs::html("cp_message", "Please enter your email address.")
+      shinyjs::html("cp_message", "Please fill in current password and the new password twice.")
       shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
       return()
     }
-    
-    result <- tryCatch({
-      call_api("/auth/request-password-change", 
-                method = "POST",
-                body = list(email = email),
-                token = app_data$api_token)
-    }, error = function(e) {
-      list(error = e$message)
-    })
-    
-    if (!is.null(result$error)) {
+    if (!identical(new_pw, new_pw2)) {
       shinyjs::show("cp_message")
-      shinyjs::html("cp_message", paste("Error:", result$error))
-      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
-    } else {
-      shinyjs::show("cp_message")
-      shinyjs::html("cp_message", "✓ Verification code sent to your email! Check backend console for code during testing.")
-      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(34, 197, 94, 0.1)'; document.getElementById('cp_message').style.color = '#22c55e';")
-      shinyjs::delay(2000, {
-        shinyjs::hide("cp_step1")
-        shinyjs::show("cp_step2")
-      })
-    }
-  })
-  
-  # ── Change Password: Verify & Reset ───────────────────────────────────────
-  observeEvent(input$cp_verify_btn, {
-    email <- trimws(input$cp_email)
-    code <- trimws(input$cp_code)
-    new_password <- input$cp_new_password
-    
-    if (!nzchar(code) || !nzchar(new_password)) {
-      shinyjs::show("cp_message")
-      shinyjs::html("cp_message", "Please enter both verification code and new password.")
+      shinyjs::html("cp_message", "New passwords do not match.")
       shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
       return()
     }
-    
-    if (nchar(new_password) < 8) {
+    if (nchar(new_pw) < 8) {
       shinyjs::show("cp_message")
       shinyjs::html("cp_message", "Password must be at least 8 characters.")
       shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
       return()
     }
-    
+
     result <- tryCatch({
-      call_api("/auth/verify-and-change-password",
-                method = "POST",
-                body = list(
-                  email = email,
-                  verification_code = code,
-                  new_password = new_password
-                ),
-                token = app_data$api_token)
-    }, error = function(e) {
-      list(error = e$message)
-    })
-    
+      call_api(
+        "/auth/change-password",
+        method = "POST",
+        body = list(old_password = old_pw, new_password = new_pw),
+        token = app_data$api_token
+      )
+    }, error = function(e) list(error = e$message))
+
     if (!is.null(result$error)) {
       shinyjs::show("cp_message")
       shinyjs::html("cp_message", paste("Error:", result$error))
@@ -1141,9 +1343,90 @@ server <- function(input, output, session) {
       shinyjs::show("cp_message")
       shinyjs::html("cp_message", "✓ Password changed successfully!")
       shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(34, 197, 94, 0.1)'; document.getElementById('cp_message').style.color = '#22c55e';")
-      shinyjs::delay(2000, {
+      shinyjs::delay(1500, {
         shinyjs::hide("cp_modal_overlay")
         shinyjs::hide("change_password_modal")
+      })
+    }
+  })
+
+  # ── Forgot Password: Open modal from login ────────────────────────────────
+  observeEvent(input$forgot_password_link, {
+    shinyjs::show("auth_modal_overlay")
+    shinyjs::show("forgot_password_modal")
+    shinyjs::show("fp_step1")
+    shinyjs::hide("fp_step2")
+    shinyjs::hide("fp_message")
+    updateTextInput(session, "fp_email", value = input$login_email %||% "")
+    updateTextInput(session, "fp_code", value = "")
+    updateTextInput(session, "fp_new_password", value = "")
+  })
+
+  observeEvent(input$fp_request_code_btn, {
+    email <- trimws(input$fp_email)
+    if (!nzchar(email)) {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", "Please enter your email address.")
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('fp_message').style.color = '#ef4444';")
+      return()
+    }
+
+    result <- tryCatch({
+      call_api("/auth/request-password-change", method = "POST", body = list(email = email))
+    }, error = function(e) list(error = e$message))
+
+    if (!is.null(result$error)) {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", paste("Error:", result$error))
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('fp_message').style.color = '#ef4444';")
+    } else {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", "✓ Verification code sent to your email.")
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(34, 197, 94, 0.1)'; document.getElementById('fp_message').style.color = '#22c55e';")
+      shinyjs::delay(800, {
+        shinyjs::hide("fp_step1")
+        shinyjs::show("fp_step2")
+      })
+    }
+  })
+
+  observeEvent(input$fp_verify_btn, {
+    email <- trimws(input$fp_email)
+    code <- trimws(input$fp_code)
+    new_password <- input$fp_new_password
+
+    if (!nzchar(code) || !nzchar(new_password)) {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", "Please enter both verification code and new password.")
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('fp_message').style.color = '#ef4444';")
+      return()
+    }
+    if (nchar(new_password) < 8) {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", "Password must be at least 8 characters.")
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('fp_message').style.color = '#ef4444';")
+      return()
+    }
+
+    result <- tryCatch({
+      call_api(
+        "/auth/verify-and-change-password",
+        method = "POST",
+        body = list(email = email, verification_code = code, new_password = new_password)
+      )
+    }, error = function(e) list(error = e$message))
+
+    if (!is.null(result$error)) {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", paste("Error:", result$error))
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('fp_message').style.color = '#ef4444';")
+    } else {
+      shinyjs::show("fp_message")
+      shinyjs::html("fp_message", "✓ Password reset successfully! You can now sign in.")
+      shinyjs::runjs("document.getElementById('fp_message').style.backgroundColor = 'rgba(34, 197, 94, 0.1)'; document.getElementById('fp_message').style.color = '#22c55e';")
+      shinyjs::delay(1500, {
+        shinyjs::hide("forgot_password_modal")
+        shinyjs::hide("auth_modal_overlay")
       })
     }
   })
@@ -1152,6 +1435,11 @@ server <- function(input, output, session) {
   observeEvent(input$cp_cancel_btn, {
     shinyjs::hide("cp_modal_overlay")
     shinyjs::hide("change_password_modal")
+  })
+
+  observeEvent(input$fp_cancel_btn, {
+    shinyjs::hide("auth_modal_overlay")
+    shinyjs::hide("forgot_password_modal")
   })
   
 

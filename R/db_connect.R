@@ -150,6 +150,51 @@ ensure_auth_schema <- function() {
        WHERE institution_id IS NOT NULL"
     )
 
+    # Keep the lecture schedule view column-compatible with the Shiny dashboard.
+    # Guarded so auth-only DBs don't error on startup.
+    view_tables <- c(
+      "lectures", "lecturer_course_assignments", "courses", "student_groups",
+      "lecturers", "rooms", "group_memberships"
+    )
+    if (all(view_tables %in% existing)) {
+      # If an older version of this DB created the view with lecture_id as an INTEGER
+      # (from l.lecture_id), Postgres will reject CREATE OR REPLACE VIEW when we
+      # change it to lecture_code (VARCHAR). Drop first to allow the type change.
+      DBI::dbExecute(conn, "DROP VIEW IF EXISTS vw_lecture_schedule CASCADE")
+      DBI::dbExecute(
+        conn,
+        "CREATE OR REPLACE VIEW vw_lecture_schedule AS\n\
+         SELECT\n\
+           l.lecture_code  AS lecture_id,\n\
+           l.lecture_name,\n\
+           l.semester_id,\n\
+           l.academic_week,\n\
+           l.lecture_date,\n\
+           l.day_name,\n\
+           TO_CHAR(l.start_time, 'HH24:MI') AS start_time,\n\
+           TO_CHAR(l.end_time,   'HH24:MI') AS end_time,\n\
+           c.course_id,\n\
+           c.course_code,\n\
+           c.course_name,\n\
+           sg.group_id,\n\
+           sg.group_code,\n\
+           sg.group_name,\n\
+           lec.lecturer_code AS lecturer_id,\n\
+           lec.full_name     AS lecturer_name,\n\
+           r.room_number     AS room,\n\
+           (SELECT COUNT(*) FROM group_memberships gm WHERE gm.group_id = sg.group_id) AS expected_students,\n\
+           l.status::text    AS status,\n\
+           l.lecture_id      AS lecture_db_id,\n\
+           lec.lecturer_id   AS lecturer_db_id\n\
+         FROM lectures l\n\
+         JOIN lecturer_course_assignments a ON l.assignment_id = a.assignment_id\n\
+         JOIN courses c ON a.course_id = c.course_id\n\
+         JOIN student_groups sg ON a.group_id = sg.group_id\n\
+         JOIN lecturers lec ON a.lecturer_id = lec.lecturer_id\n\
+         LEFT JOIN rooms r ON l.room_id = r.room_id;"
+      )
+    }
+
     TRUE
   })
 }

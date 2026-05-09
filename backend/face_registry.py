@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 KNOWN_FACES_PATH = os.path.join(BASE_DIR, 'known_faces')

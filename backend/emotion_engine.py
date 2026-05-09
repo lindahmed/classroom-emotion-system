@@ -1,7 +1,7 @@
 ﻿from deepface import DeepFace
-import random
 import tempfile
 import os
+import logging
 
 EMOTION_MAPPING = {
     'happy': 'Happy',
@@ -20,7 +20,24 @@ ENGAGEMENT_SCORES = {
     'Bored': 0.20
 }
 
+logger = logging.getLogger(__name__)
+
+def _compute_focus_score(emotion: str, confidence: float) -> float:
+    """Deterministic focus score derived from model confidence + emotion bucket."""
+    try:
+        c = float(confidence)
+    except Exception:
+        c = 0.5
+    c = max(0.0, min(1.0, c))
+
+    if emotion in ['Happy', 'Neutral']:
+        # Higher base focus for positive/neutral attention states.
+        return 0.70 + 0.30 * c
+    # Lower base focus for confused/bored states.
+    return 0.20 + 0.40 * c
+
 def analyze_emotion(image_bytes):
+    temp_path = None
     with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
         temp_file.write(image_bytes)
         temp_path = temp_file.name
@@ -31,11 +48,7 @@ def analyze_emotion(image_bytes):
             emotion = EMOTION_MAPPING.get(dominant, 'Neutral')
             confidence = result[0]['emotion'][dominant] / 100.0
             engagement_score = ENGAGEMENT_SCORES[emotion]
-            # Focus score: higher for Happy/Neutral
-            if emotion in ['Happy', 'Neutral']:
-                focus_score = random.uniform(0.7, 1.0)
-            else:
-                focus_score = random.uniform(0.2, 0.6)
+            focus_score = _compute_focus_score(emotion, confidence)
             return {
                 'emotion': emotion,
                 'confidence': confidence,
@@ -49,7 +62,7 @@ def analyze_emotion(image_bytes):
             'focus_score': 0.5
         }
     except Exception as e:
-        print(f'Error in emotion analysis: {e}')
+        logger.exception("Error in emotion analysis: %s", e)
         return {
             'emotion': 'Neutral',
             'confidence': 0.5,
@@ -57,4 +70,8 @@ def analyze_emotion(image_bytes):
             'focus_score': 0.5
         }
     finally:
-        os.unlink(temp_path)
+        if temp_path:
+            try:
+                os.unlink(temp_path)
+            except FileNotFoundError:
+                pass

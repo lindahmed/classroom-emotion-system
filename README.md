@@ -1,7 +1,7 @@
 # EduPulse AI — Classroom Emotion Detection & Analysis
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
 ![License](https://img.shields.io/badge/license-Educational-green)
 
 A premium R Shiny dashboard for real-time monitoring and analysis of student emotions in classroom settings. Uses mock data to demonstrate AI-powered emotion detection, statistical analysis, and role-based access control for educators.
@@ -14,8 +14,7 @@ EduPulse AI is a classroom emotion detection and statistical analysis system des
 - ✅ Real-time emotion analytics and clustering
 - ✅ Interactive charts and data exports
 
-**Current Version:** 0.2.0 (Semester Dashboard & Report Tab)  
-**Status:** Enhanced prototype with 16-week semester navigation, lecture selection context, and student-level reports
+**Current Version:** 0.3.0 (Full DB + Backend Integration)  \n+**Status:** End-to-end demo with PostgreSQL + FastAPI backend, real password reset emails, and improved auth/session handling
 
 ## Features
 
@@ -69,13 +68,20 @@ EduPulse AI is a classroom emotion detection and statistical analysis system des
 
 ### 🔲 Roadmap (Future Releases)
 
-**v0.3.0 — Backend & Real-Time**
-- [ ] Python FastAPI server for emotion analysis
-- [ ] OpenCV/DeepFace video processing pipeline
-- [ ] Real-time webcam emotion detection
-- [ ] SQLite persistent storage
-- [ ] REST API endpoints (/analyze-frame, /process-video, /session-data)
-- [ ] Integration with R Shiny via httr
+### ✅ Recent changes summary (latest)
+- **Auth fixes & UX**
+  - Login overlay now includes **Forgot password** (email verification code) and an in-account **Change password** (old + new, no email) in Settings.
+  - Backend now hashes passwords in a PostgreSQL-compatible way so Shiny and FastAPI stay in sync.
+- **Backend correctness**
+  - `/analyze-attendance-frame` now persists emotion + attendance records.
+  - Attendance tracking moved to a DB-backed approach with caching (fewer DB reads).
+  - Session start time is persisted (`lecture_sessions`) so `time_minute` survives backend restarts.
+- **API stability**
+  - Fixed CORS (supports variable Shiny ports) and made it configurable via `EDUPULSE_CORS_ORIGINS`.
+  - Added `/health` DB ping and FastAPI metadata/tags for a clean `/docs` page.
+- **Project hygiene**
+  - Created `docs/` and `tools/` to reduce root-level clutter; phase docs moved under `docs/phases/`.
+  - Pinned backend dependencies in `backend/requirements.txt`.
 
 **v0.4.0 — Advanced Analytics & Graphs**
 - [ ] More graphs: lecture trends, student trends, weekly trends, semester trends
@@ -138,6 +144,8 @@ Rscript run_app.R
 
 The dashboard will open in your browser at `http://localhost:3838` (port may vary; check console output).
 
+## Backend + Database (recommended)
+- Follow `[STARTUP.md](STARTUP.md)` for end-to-end setup (PostgreSQL + FastAPI + Shiny).\n+
 ## Authentication
 
 This project now uses real account authentication:
@@ -146,6 +154,9 @@ This project now uses real account authentication:
 - Passwords are stored as secure hashes (never plaintext).
 - API routes are protected with bearer tokens after login.
 - Demo/default credentials are no longer seeded.
+
+## Password reset
+- **Forgot password (login screen)**: sends a verification code by email (SMTP). You must set SMTP variables in `.env`.\n+- **Change password (Settings)**: requires old password + new password (no email verification).
 
 ## Main Lecturer Workflow (v0.2.0 - Recommended)
 

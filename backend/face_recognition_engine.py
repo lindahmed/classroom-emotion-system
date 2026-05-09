@@ -2,8 +2,12 @@
 from .face_registry import KNOWN_FACES_PATH
 import tempfile
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 def recognize_face(image_bytes):
+    temp_path = None
     with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
         temp_file.write(image_bytes)
         temp_path = temp_file.name
@@ -18,7 +22,11 @@ def recognize_face(image_bytes):
                 return {'student_id': student_id, 'student_name': name, 'recognized': True}
         return {'student_id': 'Unknown', 'student_name': '', 'recognized': False}
     except Exception as e:
-        print(f'Error in recognition: {e}')
+        logger.exception("Error in recognition: %s", e)
         return {'student_id': 'Unknown', 'student_name': '', 'recognized': False}
     finally:
-        os.unlink(temp_path)
+        if temp_path:
+            try:
+                os.unlink(temp_path)
+            except FileNotFoundError:
+                pass

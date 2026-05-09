@@ -1,16 +1,12 @@
 import os
-import pathlib
-import sys
 
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 os.environ["SKIP_DB_INIT"] = "true"
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-import main  # noqa: E402
-import auth  # noqa: E402
+from backend import auth, main
 
 
 @pytest.fixture
@@ -176,5 +172,28 @@ def test_logout_revokes_token(client, monkeypatch):
         assert resp.status_code == 200
         assert revoked["value"] is True
         assert resp.json()["success"] is True
+    finally:
+        main.app.dependency_overrides.clear()
+
+
+def test_change_password_authenticated_endpoint(client, monkeypatch):
+    # Ensure the route exists and calls the helper.
+    called = {"ok": False}
+
+    def fake_change_password_authenticated(user_id: int, old_password: str, new_password: str):
+        assert user_id == 2
+        assert old_password == "oldpass"
+        assert new_password == "NewStrongPass123"
+        called["ok"] = True
+        return {"message": "Password changed successfully"}
+
+    # Override dependency properly
+    main.app.dependency_overrides[main.get_current_user] = lambda: {"id": 2}
+    monkeypatch.setattr(main, "change_password_authenticated", fake_change_password_authenticated)
+    try:
+        resp = client.post("/auth/change-password", json={"old_password": "oldpass", "new_password": "NewStrongPass123"})
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "Password changed successfully"
+        assert called["ok"] is True
     finally:
         main.app.dependency_overrides.clear()

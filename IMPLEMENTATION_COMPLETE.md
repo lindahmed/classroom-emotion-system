@@ -131,10 +131,10 @@ The EduPulse AI classroom emotion detection system is now fully functional with:
   - Added mock emotion records
 
 ### Documentation Created
-- **PHASE_1_PASSWORD_RESET.md** — Phase 1 implementation details
-- **PHASE_1_TEST_GUIDE.md** — Password reset testing guide
-- **PHASE_2_MOCK_DATA.md** — Phase 2 implementation details
-- **PHASE_2_TEST_GUIDE.md** — Mock data testing guide
+- **docs/phases/PHASE_1_PASSWORD_RESET.md** — Phase 1 implementation details
+- **docs/phases/PHASE_1_TEST_GUIDE.md** — Password reset testing guide
+- **docs/phases/PHASE_2_MOCK_DATA.md** — Phase 2 implementation details
+- **docs/phases/PHASE_2_TEST_GUIDE.md** — Mock data testing guide
 
 ---
 
@@ -240,10 +240,10 @@ classroom-emotion-system/
 ├── www/                          # Static assets
 ├── .env                          # Environment variables
 ├── .env.example                  # Example env file
-├── PHASE_1_PASSWORD_RESET.md     # Phase 1 docs
-├── PHASE_1_TEST_GUIDE.md         # Phase 1 testing
-├── PHASE_2_MOCK_DATA.md          # Phase 2 docs
-├── PHASE_2_TEST_GUIDE.md         # Phase 2 testing
+├── docs/phases/PHASE_1_PASSWORD_RESET.md     # Phase 1 docs
+├── docs/phases/PHASE_1_TEST_GUIDE.md         # Phase 1 testing
+├── docs/phases/PHASE_2_MOCK_DATA.md          # Phase 2 docs
+├── docs/phases/PHASE_2_TEST_GUIDE.md         # Phase 2 testing
 └── README.md                     # Main documentation
 ```
 

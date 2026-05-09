@@ -108,8 +108,12 @@ update_last_login <- function(db_user_id) {
 
 #' Register a new account
 #' Creates a user record + role-specific profile in PostgreSQL.
+#' If registering a lecturer, optionally accepts teaching_assignments to create
+#' lecturer_course_assignments + generate weekly lectures.
 register_account_pg <- function(email, password, role, institution_id, full_name = NULL,
-                                department_id = NULL) {
+                                department_id = NULL,
+                                teaching_assignments = NULL,
+                                semester_id = NULL) {
   role <- normalize_role(role)
   institution_id <- normalize_institution_id(institution_id)
   full_name <- trimws(full_name %||% "")
@@ -124,6 +128,14 @@ register_account_pg <- function(email, password, role, institution_id, full_name
 
   id_error <- validate_institution_id(role, institution_id)
   if (!is.null(id_error)) return(list(error = id_error))
+
+  if (identical(role, "lecturer") && !is.null(teaching_assignments)) {
+    required_cols <- c("course_id", "group_id", "day_name", "start_time", "end_time", "room_id")
+    missing_cols <- setdiff(required_cols, names(teaching_assignments))
+    if (length(missing_cols) > 0) {
+      return(list(error = paste0("Invalid teaching assignments (missing: ", paste(missing_cols, collapse = ", "), ")")))
+    }
+  }
 
   existing <- db_query(
     "SELECT email FROM users WHERE lower(email) = lower($1)",
@@ -145,57 +157,172 @@ register_account_pg <- function(email, password, role, institution_id, full_name
 
   tryCatch({
     pool::poolWithTransaction(pool, function(conn) {
+      q <- function(sql, params = list()) {
+        if (length(params) > 0) {
+          res <- DBI::dbSendQuery(conn, sql)
+          DBI::dbBind(res, params)
+          out <- DBI::dbFetch(res)
+          DBI::dbClearResult(res)
+          out
+        } else {
+          DBI::dbGetQuery(conn, sql)
+        }
+      }
+
+      exec <- function(sql, params = list()) {
+        if (length(params) > 0) {
+          res <- DBI::dbSendStatement(conn, sql)
+          DBI::dbBind(res, params)
+          rows <- DBI::dbGetRowsAffected(res)
+          DBI::dbClearResult(res)
+          rows
+        } else {
+          DBI::dbExecute(conn, sql)
+        }
+      }
+
       base_username <- gsub("[^a-z0-9_]", "_", tolower(sub("@.*$", "", trimws(email))))
       if (nchar(base_username) < 3) base_username <- "user"
       candidate <- substr(base_username, 1, 40)
       suffix <- 1L
       repeat {
-        chk_res <- DBI::dbSendQuery(conn, "SELECT 1 FROM users WHERE username = $1 LIMIT 1")
-        DBI::dbBind(chk_res, list(candidate))
-        chk <- DBI::dbFetch(chk_res)
-        DBI::dbClearResult(chk_res)
+        chk <- q("SELECT 1 FROM users WHERE username = $1 LIMIT 1", list(candidate))
         if (nrow(chk) == 0) break
         suffix <- suffix + 1L
         candidate <- substr(paste0(base_username, "_", suffix), 1, 50)
       }
 
-      res <- DBI::dbSendQuery(conn,
+      row <- q(
         "INSERT INTO users (username, email, password_hash, role, institution_id, is_active)
           VALUES ($1, $2, crypt($3, gen_salt('bf')), $4::user_role, $5, TRUE)
-          RETURNING user_id"
+          RETURNING user_id",
+        list(candidate, trimws(tolower(email)), password, role, institution_id)
       )
-      DBI::dbBind(res, list(candidate, trimws(tolower(email)), password, role, institution_id))
-      row <- DBI::dbFetch(res)
-      DBI::dbClearResult(res)
       user_id <- as.integer(row$user_id[1])
 
       if (role == "student") {
-        res2 <- DBI::dbSendStatement(conn,
+        exec(
           "INSERT INTO students (user_id, student_code, full_name, department_id, enrollment_year)
-           VALUES ($1, $2, $3, $4, EXTRACT(YEAR FROM NOW())::integer)"
+           VALUES ($1, $2, $3, $4, EXTRACT(YEAR FROM NOW())::integer)",
+          list(user_id, institution_id, full_name, department_id)
         )
-        DBI::dbBind(res2, list(user_id, institution_id, full_name, department_id))
       } else if (role == "lecturer") {
-        res2 <- DBI::dbSendStatement(conn,
+        exec(
           "INSERT INTO lecturers (user_id, lecturer_code, full_name, department_id)
-           VALUES ($1, $2, $3, $4)"
+           VALUES ($1, $2, $3, $4)",
+          list(user_id, institution_id, full_name, department_id)
         )
-        DBI::dbBind(res2, list(user_id, institution_id, full_name, department_id))
-      } else {
-        res2 <- DBI::dbSendStatement(conn,
-          "INSERT INTO admins (user_id, full_name)
-           VALUES ($1, $2)"
-        )
-        DBI::dbBind(res2, list(user_id, full_name))
-      }
-      DBI::dbClearResult(res2)
 
-      res3 <- DBI::dbSendStatement(conn,
+        if (!is.null(teaching_assignments) && nrow(teaching_assignments) > 0) {
+          # Choose semester (active if available)
+          semester_id_use <- semester_id %||% {
+            sem <- q(
+              "SELECT semester_id FROM semesters WHERE is_active = TRUE ORDER BY start_date DESC LIMIT 1",
+              list()
+            )
+            if (nrow(sem) > 0) as.character(sem$semester_id[1]) else "SPRING2026"
+          }
+
+          lec_row <- q(
+            "SELECT lecturer_id, lecturer_code FROM lecturers WHERE user_id = $1",
+            list(user_id)
+          )
+          lecturer_db_id <- as.integer(lec_row$lecturer_id[1])
+          lecturer_code  <- as.character(lec_row$lecturer_code[1])
+
+          weeks <- q(
+            "SELECT academic_week, start_date FROM semester_weeks WHERE semester_id = $1 ORDER BY academic_week",
+            list(semester_id_use)
+          )
+          if (nrow(weeks) == 0) stop("No semester_weeks found for active semester")
+
+          day_index <- c(Monday = 1L, Tuesday = 2L, Wednesday = 3L, Thursday = 4L, Friday = 5L, Saturday = 6L, Sunday = 7L)
+          hash_hex <- function(txt) {
+            raw <- openssl::sha1(charToRaw(txt))
+            paste(sprintf("%02x", as.integer(raw)), collapse = "")
+          }
+          make_lecture_code <- function(parts) {
+            paste0("L", substr(hash_hex(paste(parts, collapse = "|")), 1, 9))
+          }
+
+          for (i in seq_len(nrow(teaching_assignments))) {
+            course_id <- as.integer(teaching_assignments$course_id[i])
+            group_id  <- as.integer(teaching_assignments$group_id[i])
+            day_name  <- as.character(teaching_assignments$day_name[i])
+            start_t   <- as.character(teaching_assignments$start_time[i])
+            end_t     <- as.character(teaching_assignments$end_time[i])
+            room_id   <- as.integer(teaching_assignments$room_id[i])
+
+            if (is.na(course_id) || is.na(group_id)) stop("Invalid course_id/group_id for lecturer assignment")
+            if (!day_name %in% names(day_index)) stop(paste0("Invalid day_name: ", day_name))
+
+            # Ensure group belongs to the selected course + semester
+            ok <- q(
+              "SELECT 1 FROM student_groups WHERE group_id = $1 AND course_id = $2 AND semester_id = $3 LIMIT 1",
+              list(group_id, course_id, semester_id_use)
+            )
+            if (nrow(ok) == 0) stop("Selected group does not match the selected course/semester")
+
+            arow <- q(
+              "INSERT INTO lecturer_course_assignments (lecturer_id, course_id, group_id, semester_id, role)
+               VALUES ($1, $2, $3, $4, 'primary')
+               ON CONFLICT (lecturer_id, course_id, group_id, semester_id)
+               DO UPDATE SET updated_at = NOW()
+               RETURNING assignment_id",
+              list(lecturer_db_id, course_id, group_id, semester_id_use)
+            )
+            assignment_id <- as.integer(arow$assignment_id[1])
+
+            course <- q("SELECT course_code, course_name FROM courses WHERE course_id = $1", list(course_id))
+            course_code <- as.character(course$course_code[1])
+
+            grp <- q("SELECT group_code, group_name FROM student_groups WHERE group_id = $1", list(group_id))
+            group_code <- as.character(grp$group_code[1])
+
+            for (w in seq_len(nrow(weeks))) {
+              academic_week <- as.integer(weeks$academic_week[w])
+              week_start <- as.Date(weeks$start_date[w])
+              week_start_u <- as.integer(format(week_start, "%u"))
+              offset <- (day_index[[day_name]] - week_start_u + 7L) %% 7L
+              lecture_date <- week_start + offset
+
+              lecture_code <- make_lecture_code(c(lecturer_code, course_id, group_id, semester_id_use, academic_week, day_name, start_t, end_t))
+              lecture_name <- paste0(course_code, " — ", group_code, " (Week ", academic_week, ")")
+
+              q(
+                "INSERT INTO lectures (lecture_code, lecture_name, assignment_id, semester_id, academic_week,
+                                       lecture_date, day_name, start_time, end_time, room_id, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8::time, $9::time, $10, 'scheduled')
+                 ON CONFLICT (lecture_code) DO UPDATE SET
+                   lecture_name = EXCLUDED.lecture_name,
+                   assignment_id = EXCLUDED.assignment_id,
+                   semester_id = EXCLUDED.semester_id,
+                   academic_week = EXCLUDED.academic_week,
+                   lecture_date = EXCLUDED.lecture_date,
+                   day_name = EXCLUDED.day_name,
+                   start_time = EXCLUDED.start_time,
+                   end_time = EXCLUDED.end_time,
+                   room_id = EXCLUDED.room_id,
+                   updated_at = NOW()",
+                list(lecture_code, lecture_name, assignment_id, semester_id_use, academic_week,
+                     lecture_date, day_name, start_t, end_t, if (is.na(room_id)) NULL else room_id)
+              )
+            }
+          }
+        }
+      } else {
+        exec(
+          "INSERT INTO admins (user_id, full_name)
+           VALUES ($1, $2)",
+          list(user_id, full_name)
+        )
+      }
+
+      exec(
         "INSERT INTO audit_log (user_id, action, entity_type, entity_id)
-         VALUES ($1, 'REGISTER', $2, $3)"
+         VALUES ($1, 'REGISTER', $2, $3)",
+        list(user_id, role, institution_id)
       )
-      DBI::dbBind(res3, list(user_id, role, institution_id))
-      DBI::dbClearResult(res3)
     })
 
     list(
