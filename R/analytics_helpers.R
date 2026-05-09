@@ -196,7 +196,7 @@ calculate_lecture_report <- function(emotion_data, lecture_id) {
       total_records = n(),
       all_emotions = paste(emotion, collapse = " → "),
       emotion_timeline = paste(
-        paste0(time, " ", emotion),
+        paste0(time_minute, " min: ", emotion),
         collapse = " → "
       ),
       happy_count = sum(emotion == "Happy"),

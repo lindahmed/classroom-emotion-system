@@ -138,20 +138,20 @@ All graphs are:
 
 ## Role-Based Access Implementation
 
-### Admin User (admin/admin123)
+### Admin User (real admin account)
 - ✅ Sees all 16 weeks and lectures
 - ✅ Can select any lecture as context
 - ✅ Views all student data
 - ✅ All tabs fully accessible
 
-### Lecturer User (lecturer/lecturer123, T01)
+### Lecturer User (real lecturer account, T01)
 - ✅ Sees only their own lectures (filtered by lecturer_id = T01)
 - ✅ Can select only their own lectures
 - ✅ Views only their students' emotion records
 - ✅ Report, Graphs, Attendance, Groups all filtered to their data
 - ✅ Week/course/group filters limited to their assignments
 
-### Student User (student/student123, S001)
+### Student User (real student account, S001)
 - ✅ Limited dashboard view (Lecturer Dashboard available but limited)
 - ✅ Cannot select lectures (no analysis tabs available in current design)
 - ✅ Views only personal emotion records and cluster assignment
@@ -227,7 +227,7 @@ Extended fields (v0.2.0):
 ## Testing Recommendations
 
 ### Quick Test (Admin)
-1. Login: `admin` / `admin123`
+1. Login with a real admin email/password
 2. Select Week 3 (should show 8 lectures)
 3. Click "View Analysis" on first lecture
 4. Check Live Monitor shows data
@@ -236,7 +236,7 @@ Extended fields (v0.2.0):
 7. Check Settings - should show selected lecture
 
 ### Lecturer Test (T01)
-1. Login: `lecturer` / `lecturer123`
+1. Login with a real lecturer email/password
 2. Should only see weeks with their lectures
 3. Select Week 2
 4. Should see only 2 lectures (T01's CS301 and CS302 lectures)
@@ -245,7 +245,7 @@ Extended fields (v0.2.0):
 7. Export CSV should only contain that lecture's data
 
 ### Student Test (S001)
-1. Login: `student` / `student123`
+1. Login with a real student email/password
 2. Should see limited dashboard
 3. Can see personal attendance/focus in Attendance tab
 4. Personal cluster in Groups tab

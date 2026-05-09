@@ -138,35 +138,20 @@ Rscript run_app.R
 
 The dashboard will open in your browser at `http://localhost:3838` (port may vary; check console output).
 
-## Demo Credentials
+## Authentication
 
-**Important:** These are demo credentials for testing. In production, implement proper authentication with hashed passwords and a real backend.
+This project now uses real account authentication:
 
-### 👤 Admin User
-- **Username:** `admin`
-- **Password:** `admin123`
-- **Access:** All data, all lectures, all analytics features
-- **Use this to:** View complete system capabilities
-
-### 👨‍🏫 Lecturer User
-- **Username:** `lecturer`
-- **Password:** `lecturer123`
-- **Access:** Only assigned lectures (Lectures 1 & 3)
-- **User ID:** T01
-- **Use this to:** Test role-based filtering for educators
-
-### 🎓 Student User
-- **Username:** `student`
-- **Password:** `student123`
-- **Access:** Only personal data (Student 1)
-- **User ID:** S001
-- **Use this to:** Test student privacy and limited access
+- Sign up with a valid email + password from the app login overlay.
+- Passwords are stored as secure hashes (never plaintext).
+- API routes are protected with bearer tokens after login.
+- Demo/default credentials are no longer seeded.
 
 ## Main Lecturer Workflow (v0.2.0 - Recommended)
 
 The primary user experience for educators is now:
 
-1. **Login** as Lecturer (T01) with `lecturer` / `lecturer123`
+1. **Login** with your real account email + password
 2. **Land on Lecturer Dashboard** - see all 16 weeks of the semester
 3. **Select a Week** - click any of the 16 week buttons (1-16)
 4. **View Weekly Schedule** - all your lectures that week across courses and groups

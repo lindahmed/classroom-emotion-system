@@ -1,5 +1,5 @@
 -- =============================================================================
--- EduPulse AI — Seed Data
+-- EduPulse AI — Seed Data (cleaned)
 -- Initial data for departments, rooms, semester, courses, demo users, settings
 -- =============================================================================
 
@@ -38,9 +38,6 @@ INSERT INTO courses (course_code, course_name, department_id, credit_hours, desc
         'Statistical methods for data analysis and interpretation')
 ON CONFLICT (course_code) DO NOTHING;
 
--- User accounts are intentionally not seeded with fixed credentials.
--- Create real accounts via /auth/signup (or admin SQL scripts) after deployment.
-
 -- Semester Weeks (16 weeks: Feb 9 - May 24, 2026)
 INSERT INTO semester_weeks (semester_id, academic_week, week_label, start_date, end_date, status) VALUES
     ('SPRING2026', 1,  'Week 1',  '2026-02-09', '2026-02-15', 'completed'),
@@ -61,8 +58,7 @@ INSERT INTO semester_weeks (semester_id, academic_week, week_label, start_date, 
     ('SPRING2026', 16, 'Week 16', '2026-05-25', '2026-05-31', 'scheduled')
 ON CONFLICT (semester_id, academic_week) DO NOTHING;
 
--- Mock User Accounts for Testing (password: EduPulse#2026)
--- Email addresses as provided by user
+-- Test User Accounts (password: EduPulse#2026)
 INSERT INTO users (username, email, password_hash, role, institution_id, is_active) VALUES
     ('lindahmed05', 'lindahmed05@gmail.com', '$2b$12$CWKRn/VoDczoTxwwiya5U.U9jITzkAYfY36E/mZjBIW0WrIe9XBzy', 'student', 'S001', TRUE),
     ('minayoussef', 'Minayoussef027@gmail.com', '$2b$12$CWKRn/VoDczoTxwwiya5U.U9jITzkAYfY36E/mZjBIW0WrIe9XBzy', 'admin', 'A001', TRUE),
@@ -93,7 +89,7 @@ INSERT INTO student_groups (group_name, group_code, course_id, semester_id) VALU
     ('Group A - CS302', 'GRP_A_CS302', (SELECT course_id FROM courses WHERE course_code = 'CS302'), 'SPRING2026')
 ON CONFLICT (group_code, semester_id) DO NOTHING;
 
--- Group Memberships (add students to groups)
+-- Group Memberships
 INSERT INTO group_memberships (group_id, student_id) VALUES
     ((SELECT group_id FROM student_groups WHERE group_code = 'GRP_A_CS301'), 
      (SELECT student_id FROM students WHERE student_code = 'S001')),
@@ -105,81 +101,19 @@ ON CONFLICT (group_id, student_id) DO NOTHING;
 
 -- Lecturer Course Assignments
 INSERT INTO lecturer_course_assignments (lecturer_id, course_id, group_id, semester_id, role) VALUES
-    ((SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com'),
+    ((SELECT lecturer_id FROM lecturers WHERE user_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com')),
      (SELECT course_id FROM courses WHERE course_code = 'CS301'),
      (SELECT group_id FROM student_groups WHERE group_code = 'GRP_A_CS301'),
      'SPRING2026', 'primary'),
-    ((SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com'),
+    ((SELECT lecturer_id FROM lecturers WHERE user_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com')),
      (SELECT course_id FROM courses WHERE course_code = 'CS301'),
      (SELECT group_id FROM student_groups WHERE group_code = 'GRP_B_CS301'),
      'SPRING2026', 'primary'),
-    ((SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com'),
+    ((SELECT lecturer_id FROM lecturers WHERE user_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com')),
      (SELECT course_id FROM courses WHERE course_code = 'CS302'),
      (SELECT group_id FROM student_groups WHERE group_code = 'GRP_A_CS302'),
      'SPRING2026', 'primary')
 ON CONFLICT (lecturer_id, course_id, group_id, semester_id) DO NOTHING;
-
--- Mock Lectures for Weeks 1-13 (weeks 1-12 completed, week 13 in progress)
--- Week 1 lectures
-INSERT INTO lectures (assignment_id, group_id, lecture_date, start_time, end_time, room_id, status, topic) VALUES
-    ((SELECT assignment_id FROM lecturer_course_assignments WHERE 
-      lecturer_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com') 
-      AND course_id = (SELECT course_id FROM courses WHERE course_code = 'CS301')),
-     (SELECT group_id FROM student_groups WHERE group_code = 'GRP_A_CS301'),
-     '2026-02-09'::date, '09:00:00'::time, '10:30:00'::time,
-     (SELECT room_id FROM rooms WHERE room_number = 'Room 204'), 'analyzed', 'Introduction to AI'),
-    ((SELECT assignment_id FROM lecturer_course_assignments WHERE 
-      lecturer_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com') 
-      AND course_id = (SELECT course_id FROM courses WHERE course_code = 'CS301')),
-     (SELECT group_id FROM student_groups WHERE group_code = 'GRP_B_CS301'),
-     '2026-02-10'::date, '11:00:00'::time, '12:30:00'::time,
-     (SELECT room_id FROM rooms WHERE room_number = 'Room 305'), 'analyzed', 'Introduction to AI')
-ON CONFLICT DO NOTHING;
-
--- Week 13 lectures (active, current week)
-INSERT INTO lectures (assignment_id, group_id, lecture_date, start_time, end_time, room_id, status, topic) VALUES
-    ((SELECT assignment_id FROM lecturer_course_assignments WHERE 
-      lecturer_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com') 
-      AND course_id = (SELECT course_id FROM courses WHERE course_code = 'CS301')),
-     (SELECT group_id FROM student_groups WHERE group_code = 'GRP_A_CS301'),
-     '2026-05-05'::date, '09:00:00'::time, '10:30:00'::time,
-     (SELECT room_id FROM rooms WHERE room_number = 'Room 204'), 'in_progress', 'Advanced Topics: Week 13'),
-    ((SELECT assignment_id FROM lecturer_course_assignments WHERE 
-      lecturer_id = (SELECT user_id FROM users WHERE email = 'linda2ahmed02@gmail.com') 
-      AND course_id = (SELECT course_id FROM courses WHERE course_code = 'CS301')),
-     (SELECT group_id FROM student_groups WHERE group_code = 'GRP_B_CS301'),
-     '2026-05-06'::date, '11:00:00'::time, '12:30:00'::time,
-     (SELECT room_id FROM rooms WHERE room_number = 'Room 305'), 'in_progress', 'Advanced Topics: Week 13')
-ON CONFLICT DO NOTHING;
-
--- Mock Attendance Records for Week 1 lectures
-INSERT INTO attendance_records (student_id, lecture_id, status, first_seen_at, last_seen_at, total_absence_minutes, attendance_pct) VALUES
-    ((SELECT student_id FROM students WHERE student_code = 'S001'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-09'::date LIMIT 1),
-     'Present', NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days', 0, 100.0),
-    ((SELECT student_id FROM students WHERE student_code = 'S002'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-10'::date LIMIT 1),
-     'Present', NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days', 0, 100.0)
-ON CONFLICT (student_id, lecture_id) DO NOTHING;
-
--- Mock Emotion Records for Week 1 (varied emotions: Happy, Neutral, Confused, Bored)
-INSERT INTO emotion_records (student_id, lecture_id, recorded_at, time_minute, emotion, confidence, engagement_score, focus_score, is_present, source, model_name) VALUES
-    ((SELECT student_id FROM students WHERE student_code = 'S001'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-09'::date LIMIT 1),
-     (NOW() - INTERVAL '30 days')::timestamp, 0, 'Happy', 0.92, 0.85, 0.88, TRUE, 'live_camera', 'EduPulse_v1.0'),
-    ((SELECT student_id FROM students WHERE student_code = 'S001'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-09'::date LIMIT 1),
-     (NOW() - INTERVAL '30 days' + INTERVAL '5 minutes')::timestamp, 5, 'Neutral', 0.78, 0.72, 0.75, TRUE, 'live_camera', 'EduPulse_v1.0'),
-    ((SELECT student_id FROM students WHERE student_code = 'S001'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-09'::date LIMIT 1),
-     (NOW() - INTERVAL '30 days' + INTERVAL '10 minutes')::timestamp, 10, 'Confused', 0.85, 0.55, 0.60, TRUE, 'live_camera', 'EduPulse_v1.0'),
-    ((SELECT student_id FROM students WHERE student_code = 'S002'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-10'::date LIMIT 1),
-     (NOW() - INTERVAL '30 days')::timestamp, 0, 'Happy', 0.88, 0.82, 0.80, TRUE, 'live_camera', 'EduPulse_v1.0'),
-    ((SELECT student_id FROM students WHERE student_code = 'S002'),
-     (SELECT lecture_id FROM lectures WHERE topic = 'Introduction to AI' AND lecture_date = '2026-02-10'::date LIMIT 1),
-     (NOW() - INTERVAL '30 days' + INTERVAL '5 minutes')::timestamp, 5, 'Bored', 0.76, 0.45, 0.50, TRUE, 'live_camera', 'EduPulse_v1.0')
-ON CONFLICT DO NOTHING;
 
 -- System Settings
 INSERT INTO system_settings (setting_key, setting_value, setting_type, description) VALUES

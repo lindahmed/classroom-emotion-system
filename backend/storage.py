@@ -4,7 +4,7 @@ Replaces CSV-based storage with database inserts.
 """
 
 from datetime import datetime
-from backend.database import get_connection, execute_insert, execute_query
+from .database import get_connection, execute_insert, execute_query
 
 
 def append_record(record: dict):

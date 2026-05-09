@@ -24,14 +24,18 @@ source("R/csv_backup.R")
 
 # Initialize database pool on app start
 # (conditional — falls back to CSV if DB unavailable)
-.try_db_init <- tryCatch({
-  get_db_pool()
-  TRUE
-}, error = function(e) {
-  message(paste("Database not available, using CSV fallback:", e$message))
-  source("R/generate_sample_data.R")
+.try_db_init <- if (isTRUE(USE_DATABASE)) {
+  tryCatch({
+    get_db_pool()
+    ensure_auth_schema()
+    TRUE
+  }, error = function(e) {
+    message(paste("Database not available, using CSV fallback:", e$message))
+    FALSE
+  })
+} else {
   FALSE
-})
+}
 
 # Initialize app-level data
 app_data <- reactiveValues(
@@ -41,51 +45,46 @@ app_data <- reactiveValues(
   semester_weeks = NULL,
   user_role = NULL,
   user_id = NULL,
+  institution_id = NULL,
   user_name = NULL,
-  user_username = NULL,
+  user_email = NULL,
   db_user_id = NULL,
+  api_token = NULL,
   selected_week = 1,
   selected_lecture_id = NULL,
   start_session_request = NULL,
   live_face_response = NULL
 )
 
-# Authenticate user via PostgreSQL (with CSV fallback)
-authenticate_user <- function(username, password) {
-  # Try database auth first
-  if (.try_db_init) {
-    user <- tryCatch({
-      authenticate_user_pg(username, password)
-    }, error = function(e) NULL)
-    if (!is.null(user)) return(user)
+# Authenticate user via PostgreSQL (email + password)
+authenticate_user <- function(email, password) {
+  if (!.try_db_init) {
+    return(NULL)
   }
-
-  # CSV fallback: hardcoded users for development
-  USERS <- list(
-    list(username = "admin",    password = "admin123",    role = "Admin",    user_id = "ADMIN", name = "Administrator"),
-    list(username = "lecturer", password = "lecturer123", role = "Lecturer", user_id = "T01",   name = "Dr. Ahmed"),
-    list(username = "student",  password = "student123",  role = "Student",  user_id = "S001",  name = "Student 1")
-  )
-  for (u in USERS) {
-    if (u$username == username && u$password == password) return(u)
-  }
-  NULL
+  tryCatch({
+    authenticate_user_pg(email, password)
+  }, error = function(e) NULL)
 }
 
 # API configuration
 API_BASE_URL <- "http://localhost:8000"
 
 # Function to call FastAPI with timeout
-call_api <- function(endpoint, method = "GET", body = NULL) {
+call_api <- function(endpoint, method = "GET", body = NULL, token = NULL) {
   url <- paste0(API_BASE_URL, endpoint)
   tryCatch({
     config <- timeout(3)  # 3 second timeout
+    headers <- if (!is.null(token) && nzchar(token)) add_headers(Authorization = paste("Bearer", token)) else NULL
     if (method == "POST") {
-      response <- POST(url, body = body, encode = "json", config = config)
+      args <- list(url = url, body = body, encode = "json", config = config)
+      if (!is.null(headers)) args <- c(args, list(headers))
+      response <- do.call(POST, args)
     } else {
-      response <- GET(url, config = config)
+      args <- list(url = url, config = config)
+      if (!is.null(headers)) args <- c(args, list(headers))
+      response <- do.call(GET, args)
     }
-    if (status_code(response) == 200) {
+    if (status_code(response) >= 200 && status_code(response) < 300) {
       return(fromJSON(content(response, "text", encoding = "UTF-8")))
     } else {
       message(paste("API call failed with status:", status_code(response)))
@@ -280,6 +279,7 @@ ui <- fluidPage(
       "var cameraStream = null;\n" ,
       "var cameraInterval = null;\n" ,
       "var currentLectureId = null;\n" ,
+      "var eduPulseApiToken = null;\n" ,
       "function startMonitorCamera(message) {\n" ,
       "  currentLectureId = message.lecture_id;\n" ,
       "  var video = document.getElementById('monitor_video');\n" ,
@@ -325,7 +325,9 @@ ui <- fluidPage(
       "    var data = new FormData();\n" ,
       "    data.append('file', blob, 'frame.jpg');\n" ,
       "    data.append('lecture_id', currentLectureId);\n" ,
-      "    fetch('http://localhost:8000/analyze-attendance-frame', { method: 'POST', body: data })\n" ,
+      "    var headers = {};\n" ,
+      "    if (eduPulseApiToken) { headers['Authorization'] = 'Bearer ' + eduPulseApiToken; }\n" ,
+      "    fetch('http://localhost:8000/analyze-attendance-frame', { method: 'POST', body: data, headers: headers })\n" ,
       "      .then(function(response) { return response.json(); })\n" ,
       "      .then(function(json) {\n" ,
       "        Shiny.setInputValue('live_face_response', JSON.stringify(json), { priority: 'event' });\n" ,
@@ -345,6 +347,7 @@ ui <- fluidPage(
       "}\n" ,
       "Shiny.addCustomMessageHandler('startCamera', function(message) { startMonitorCamera(message); });\n" ,
       "Shiny.addCustomMessageHandler('stopCamera', function(message) { stopMonitorCamera(); });\n" ,
+      "Shiny.addCustomMessageHandler('setApiToken', function(message) { eduPulseApiToken = message && message.token ? message.token : null; });\n" ,
       "function toggleTheme() {\n" ,
       "  var html = document.documentElement;\n" ,
       "  var btn = document.getElementById('toggle_theme');\n" ,
@@ -380,8 +383,8 @@ ui <- fluidPage(
       div(class = "login-logo", "LogIn"),
       div(class = "login-sub",  "Classroom Emotion Detection & Analysis"),
       div(class = "mb-3",
-          tags$label("Username", class = "form-label"),
-          textInput("login_username", NULL, placeholder = "Enter username")
+          tags$label("Email", class = "form-label"),
+          textInput("login_email", NULL, placeholder = "Enter your email")
       ),
       div(class = "mb-4",
           tags$label("Password", class = "form-label"),
@@ -392,17 +395,11 @@ ui <- fluidPage(
       ),
       shinyjs::hidden(
         div(id = "login_error", class = "alert alert-warning mt-3 small mb-0",
-            "Invalid username or password.")
+            "Invalid email or password.")
       ),
       div(style = "text-align:center; margin-top:1rem;",
           actionLink("show_signup", "Don't have an account? Sign Up",
                      style = "color: var(--accent-strong); font-weight:600; font-size:0.9rem; text-decoration:none;")
-      ),
-      div(class = "alert alert-info mt-3 small mb-0",
-          tags$b("Demo credentials:"), br(),
-          "admin / admin123", br(),
-          "lecturer / lecturer123", br(),
-          "student / student123"
       )
     ),
     # Sign-up card
@@ -411,18 +408,23 @@ ui <- fluidPage(
         id = "signup_card",
         class = "login-card",
         div(class = "login-logo", "Sign Up"),
-        div(class = "login-sub",  "Create a new student account"),
+        div(class = "login-sub",  "Create a new account"),
         div(class = "mb-3",
             tags$label("Full Name", class = "form-label"),
             textInput("signup_name", NULL, placeholder = "Enter your full name")
         ),
         div(class = "mb-3",
-            tags$label("Student ID", class = "form-label"),
-            textInput("signup_student_code", NULL, placeholder = "e.g., S121")
+            tags$label("Role", class = "form-label"),
+            selectInput(
+              "signup_role",
+              NULL,
+              choices = c("Student" = "student", "Lecturer" = "lecturer", "Admin" = "admin"),
+              selected = "student"
+            )
         ),
         div(class = "mb-3",
-            tags$label("Username", class = "form-label"),
-            textInput("signup_username", NULL, placeholder = "Choose a username")
+            tags$label("Institution ID", class = "form-label"),
+            textInput("signup_institution_id", NULL, placeholder = "e.g., S12345, L12345, A12345")
         ),
         div(class = "mb-3",
             tags$label("Email", class = "form-label"),
@@ -430,7 +432,7 @@ ui <- fluidPage(
         ),
         div(class = "mb-3",
             tags$label("Password", class = "form-label"),
-            passwordInput("signup_password", NULL, placeholder = "Min. 6 characters")
+            passwordInput("signup_password", NULL, placeholder = "Min. 8 characters")
         ),
         div(class = "mb-4",
             tags$label("Confirm Password", class = "form-label"),
@@ -744,13 +746,23 @@ ui <- fluidPage(
             fluidRow(
               column(6, div(class = "ep-card",
                             div(class = "ep-card-header", "Session Information"),
-                            div(class="mb-2", strong("Username:"),    br(), textOutput("info_username")),
+                            div(class="mb-2", strong("Email:"),       br(), textOutput("info_username")),
                             div(class="mb-2", strong("Role:"),        br(), textOutput("info_role")),
-                            div(class="mb-2", strong("User ID:"),     br(), textOutput("info_user_id")),
+                            div(class="mb-2", strong("Institution ID:"),     br(), textOutput("info_user_id")),
                             div(class="mb-2", strong("Name:"),        br(), textOutput("info_display_name")),
                             div(class="mb-2", strong("Selected Week:"),    br(), textOutput("info_selected_week")),
                             div(class="mb-2", strong("Selected Lecture:"), br(), textOutput("info_selected_lecture"))
               )),
+              column(6, div(class = "ep-card",
+                            div(class = "ep-card-header", "Change Password"),
+                            p(style = "color: var(--muted); font-size:0.82rem; margin-bottom:1rem;",
+                              "Request a password change with email verification."),
+                            actionButton("change_password_btn", "🔐 Change Password",
+                                         class = "btn btn-warning btn-sm"),
+                            div(id = "change_password_status", style = "margin-top:0.5rem; color:var(--muted); font-size:0.85rem;")
+              ))
+            ),
+            fluidRow(
               column(6, div(class = "ep-card",
                             div(class = "ep-card-header", "About EduPulse AI"),
                             p("EduPulse AI is a classroom emotion detection and statistical analysis system."),
@@ -766,6 +778,54 @@ ui <- fluidPage(
                             textOutput("sync_status")
               ))
             )
+          )),
+          
+          # ── Change Password Modal ──────────────────────────────────────────
+          shinyjs::hidden(div(
+            id = "change_password_modal",
+            style = paste(
+              "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);",
+              "background:var(--surface); border:1px solid var(--border);",
+              "border-radius:12px; padding:2rem; z-index:9999; width:90%; max-width:420px;",
+              "box-shadow: 0 10px 40px rgba(0,0,0,0.3);"
+            ),
+            h3("🔐 Change Password", style = "margin-top:0; margin-bottom:1.5rem;"),
+            div(id = "cp_step1", style = "display:block;",
+                p(style = "color:var(--muted); font-size:0.9rem;", "Enter your email address to receive a verification code."),
+                div(class = "mb-3",
+                    tags$label("Email Address", class = "form-label"),
+                    textInput("cp_email", NULL, value = "", placeholder = "your@email.com")
+                ),
+                actionButton("cp_request_code_btn", "Send Verification Code",
+                             class = "btn btn-primary w-100")
+            ),
+            div(id = "cp_step2", style = "display:none;",
+                p(style = "color:var(--muted); font-size:0.9rem;", "Enter the verification code sent to your email and create a new password."),
+                div(class = "mb-3",
+                    tags$label("Verification Code (6 digits)", class = "form-label"),
+                    htmltools::tagAppendAttributes(
+                      textInput("cp_code", NULL, value = "", placeholder = "000000"),
+                      maxlength = 6,
+                      inputmode = "numeric",
+                      pattern = "[0-9]*"
+                    )
+                ),
+                div(class = "mb-3",
+                    tags$label("New Password", class = "form-label"),
+                    passwordInput("cp_new_password", NULL, value = "", placeholder = "8+ characters")
+                ),
+                actionButton("cp_verify_btn", "Verify & Change Password",
+                             class = "btn btn-primary w-100")
+            ),
+            div(id = "cp_message", style = "margin-top:1rem; padding:0.75rem; border-radius:6px; display:none; font-size:0.9rem;"),
+            div(style = "display:flex; gap:0.5rem; margin-top:1.5rem; justify-content:flex-end;",
+                actionButton("cp_cancel_btn", "Cancel",
+                             class = "btn btn-secondary btn-sm")
+            )
+          )),
+          div(id = "cp_modal_overlay", style = paste(
+            "position:fixed; top:0; left:0; width:100%; height:100%;",
+            "background:rgba(0,0,0,0.5); z-index:9998; display:none;"
           ))
           
         ) # end main-panel
@@ -822,31 +882,64 @@ server <- function(input, output, session) {
   # ── Login ─────────────────────────────────────────────────────────────────
   observeEvent(input$login_btn, {
     user <- authenticate_user(
-      trimws(input$login_username),
+      trimws(input$login_email),
       input$login_password
     )
     
     if (!is.null(user)) {
+      api_auth <- call_api(
+        endpoint = "/auth/login",
+        method = "POST",
+        body = list(
+          email = trimws(input$login_email),
+          password = input$login_password
+        )
+      )
+      if (is.null(api_auth$access_token) || !nzchar(api_auth$access_token)) {
+        shinyjs::html("login_error", "Login failed: API authentication is unavailable.")
+        shinyjs::show("login_error")
+        return()
+      }
+
+      # Show progress dialog during data loading
+      shinyjs::disable("login_btn")
+      showNotification("Loading data...", id = "login_loading", type = "default", duration = NULL)
+      
       is_logged_in(TRUE)
       app_data$user_role <- user$role
       app_data$user_id   <- user$user_id
+      app_data$institution_id <- user$institution_id %||% user$user_id
       app_data$user_name <- user$name
-      app_data$user_username <- user$username
+      app_data$user_email <- user$email
       app_data$db_user_id <- if (!is.null(user$db_user_id)) user$db_user_id else NULL
+      app_data$api_token <- api_auth$access_token
       app_data$selected_week <- 1
       app_data$selected_lecture_id <- NULL
+      session$sendCustomMessage("setApiToken", list(token = api_auth$access_token))
 
       # Update last login timestamp in DB
       if (.try_db_init && !is.null(user$db_user_id)) {
         tryCatch(update_last_login(user$db_user_id), error = function(e) NULL)
       }
 
-      # Load & filter data
-      app_data$all_data       <- load_emotion_data()
-      app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
-      raw_schedule            <- load_lecture_schedule()
-      app_data$lecture_schedule <- filter_schedule_by_role(raw_schedule, user$role, user$user_id)
-      app_data$semester_weeks <- load_semester_weeks()
+      # Load & filter data with error handling
+      tryCatch({
+        app_data$all_data       <- load_emotion_data()
+        app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
+        raw_schedule            <- load_lecture_schedule()
+        app_data$lecture_schedule <- filter_schedule_by_role(raw_schedule, user$role, user$user_id)
+        app_data$semester_weeks <- load_semester_weeks()
+      }, error = function(e) {
+        # Hard fallback to CSV if DB fails unexpectedly
+        message(paste("Login data load error:", e$message))
+        USE_DATABASE <<- FALSE
+        app_data$all_data       <- load_emotion_data_csv()
+        app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
+        raw_schedule            <- load_lecture_schedule_csv()
+        app_data$lecture_schedule <- filter_schedule_by_role(raw_schedule, user$role, user$user_id)
+        app_data$semester_weeks <- load_semester_weeks_csv()
+        showNotification("Database unavailable — using CSV data.", type = "warning", duration = 5)
+      })
       
       # Populate selects
       updateSelectInput(session, "filter_group",
@@ -864,8 +957,12 @@ server <- function(input, output, session) {
       show_panel("dashboard")
       update_week_buttons(1)
       
+      removeNotification("login_loading")
       showNotification(paste0("Welcome, ", user$name, "!"), type = "message", duration = 3)
+      
+      shinyjs::enable("login_btn")
     } else {
+      shinyjs::html("login_error", "Invalid email or password.")
       shinyjs::show("login_error")
     }
   })
@@ -897,12 +994,12 @@ server <- function(input, output, session) {
 
     if (.try_db_init) {
       result <- tryCatch({
-        register_student_pg(
-          username     = input$signup_username,
-          email        = input$signup_email,
-          password     = input$signup_password,
-          full_name    = input$signup_name,
-          student_code = input$signup_student_code
+        register_account_pg(
+          email          = input$signup_email,
+          password       = input$signup_password,
+          full_name      = input$signup_name,
+          role           = input$signup_role,
+          institution_id = input$signup_institution_id
         )
       }, error = function(e) {
         list(error = paste("Registration failed:", e$message))
@@ -918,7 +1015,7 @@ server <- function(input, output, session) {
       # Success — show message and switch to login
       shinyjs::hide("signup_error")
       shinyjs::show("signup_success")
-      updateTextInput(session, "login_username", value = input$signup_username)
+      updateTextInput(session, "login_email", value = input$signup_email)
       updateTextInput(session, "login_password", value = "")
       # Auto-switch to login after 2 seconds
       shinyjs::delay(2000, {
@@ -932,11 +1029,20 @@ server <- function(input, output, session) {
 
   # ── Logout ────────────────────────────────────────────────────────────────
   observeEvent(input$logout_btn, {
+    if (!is.null(app_data$api_token) && nzchar(app_data$api_token)) {
+      tryCatch({
+        call_api("/auth/logout", method = "POST", token = app_data$api_token)
+      }, error = function(e) NULL)
+    }
     session$sendCustomMessage("stopCamera", list())
+    session$sendCustomMessage("setApiToken", list(token = NULL))
     is_logged_in(FALSE)
     app_data$user_role           <- NULL
     app_data$user_id             <- NULL
+    app_data$institution_id      <- NULL
     app_data$user_name           <- NULL
+    app_data$user_email          <- NULL
+    app_data$api_token           <- NULL
     app_data$filtered_data       <- NULL
     app_data$selected_week       <- 1
     app_data$selected_lecture_id <- NULL
@@ -944,10 +1050,111 @@ server <- function(input, output, session) {
     for (p in ALL_PANELS) shinyjs::hide(paste0("panel_", p))
     shinyjs::show("login_overlay")
     shinyjs::hide("main_app")
-    updateTextInput(session,     "login_username", value = "")
+    updateTextInput(session,     "login_email", value = "")
     updateTextInput(session,     "login_password", value = "")
   })
   
+  # ── Change Password: Open Modal ───────────────────────────────────────────
+  observeEvent(input$change_password_btn, {
+    shinyjs::show("cp_modal_overlay")
+    shinyjs::show("change_password_modal")
+    shinyjs::show("cp_step1")
+    shinyjs::hide("cp_step2")
+    shinyjs::hide("cp_message")
+    updateTextInput(session, "cp_email", value = app_data$user_email)
+    updateTextInput(session, "cp_code", value = "")
+    updateTextInput(session, "cp_new_password", value = "")
+  })
+  
+  # ── Change Password: Request Code ─────────────────────────────────────────
+  observeEvent(input$cp_request_code_btn, {
+    email <- trimws(input$cp_email)
+    if (!nzchar(email)) {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", "Please enter your email address.")
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
+      return()
+    }
+    
+    result <- tryCatch({
+      call_api("/auth/request-password-change", 
+                method = "POST",
+                body = list(email = email),
+                token = app_data$api_token)
+    }, error = function(e) {
+      list(error = e$message)
+    })
+    
+    if (!is.null(result$error)) {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", paste("Error:", result$error))
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
+    } else {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", "✓ Verification code sent to your email! Check backend console for code during testing.")
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(34, 197, 94, 0.1)'; document.getElementById('cp_message').style.color = '#22c55e';")
+      shinyjs::delay(2000, {
+        shinyjs::hide("cp_step1")
+        shinyjs::show("cp_step2")
+      })
+    }
+  })
+  
+  # ── Change Password: Verify & Reset ───────────────────────────────────────
+  observeEvent(input$cp_verify_btn, {
+    email <- trimws(input$cp_email)
+    code <- trimws(input$cp_code)
+    new_password <- input$cp_new_password
+    
+    if (!nzchar(code) || !nzchar(new_password)) {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", "Please enter both verification code and new password.")
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
+      return()
+    }
+    
+    if (nchar(new_password) < 8) {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", "Password must be at least 8 characters.")
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
+      return()
+    }
+    
+    result <- tryCatch({
+      call_api("/auth/verify-and-change-password",
+                method = "POST",
+                body = list(
+                  email = email,
+                  verification_code = code,
+                  new_password = new_password
+                ),
+                token = app_data$api_token)
+    }, error = function(e) {
+      list(error = e$message)
+    })
+    
+    if (!is.null(result$error)) {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", paste("Error:", result$error))
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; document.getElementById('cp_message').style.color = '#ef4444';")
+    } else {
+      shinyjs::show("cp_message")
+      shinyjs::html("cp_message", "✓ Password changed successfully!")
+      shinyjs::runjs("document.getElementById('cp_message').style.backgroundColor = 'rgba(34, 197, 94, 0.1)'; document.getElementById('cp_message').style.color = '#22c55e';")
+      shinyjs::delay(2000, {
+        shinyjs::hide("cp_modal_overlay")
+        shinyjs::hide("change_password_modal")
+      })
+    }
+  })
+  
+  # ── Change Password: Close Modal ──────────────────────────────────────────
+  observeEvent(input$cp_cancel_btn, {
+    shinyjs::hide("cp_modal_overlay")
+    shinyjs::hide("change_password_modal")
+  })
+  
+
   # ── View lecture from schedule ────────────────────────────────────────────
   observeEvent(input$view_lecture_clicked, {
     req(input$view_lecture_clicked)
@@ -972,7 +1179,11 @@ server <- function(input, output, session) {
     # Show loading message
     showNotification("Starting session...", type = "message", duration = 2)
     
-    result <- call_api(paste0("/start-session/", lecture_id), method = "POST")
+    result <- call_api(
+      paste0("/start-session/", lecture_id),
+      method = "POST",
+      token = app_data$api_token
+    )
     
     if (!is.null(result)) {
       showNotification(paste("Session started for lecture:", lecture_id), type = "success", duration = 3)
@@ -1395,10 +1606,10 @@ server <- function(input, output, session) {
   output$role_badge       <- renderText({ if(is_logged_in()) app_data$user_role else "" })
   output$info_username    <- renderText({
     if(!is_logged_in()) return("Not logged in")
-    app_data$user_username %||% "Unknown"
+    app_data$user_email %||% "Unknown"
   })
   output$info_role         <- renderText({ if(is_logged_in()) app_data$user_role  else "Not logged in" })
-  output$info_user_id      <- renderText({ if(is_logged_in()) app_data$user_id    else "Not logged in" })
+  output$info_user_id      <- renderText({ if(is_logged_in()) app_data$institution_id %||% app_data$user_id else "Not logged in" })
   output$info_display_name <- renderText({ if(is_logged_in()) app_data$user_name  else "Not logged in" })
   output$info_selected_week <- renderText({
     if(is_logged_in()) paste("Week",app_data$selected_week) else "Not logged in"

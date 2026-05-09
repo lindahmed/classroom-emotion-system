@@ -15,6 +15,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 import argparse
 import os
+import secrets
 import sys
 from datetime import datetime
 
@@ -41,14 +42,15 @@ def migrate_lecturers(conn):
         name = row['lecturer_name']
         email = row['email']
 
-        # Create user account
+        # Create user account with non-guessable temporary password hash
         username = code.lower()
+        temp_password = secrets.token_urlsafe(24)
         cur.execute("""
             INSERT INTO users (username, email, password_hash, role, is_active)
             VALUES (%s, %s, crypt(%s, gen_salt('bf')), 'lecturer', TRUE)
             ON CONFLICT (username) DO NOTHING
             RETURNING user_id
-        """, (username, email, f'{username}123'))
+        """, (username, email, temp_password))
 
         result = cur.fetchone()
         if result is None:
@@ -93,12 +95,13 @@ def migrate_students(conn):
         username = code.lower()
         email = f'{code}@student.edupulse.edu'
 
+        temp_password = secrets.token_urlsafe(24)
         cur.execute("""
             INSERT INTO users (username, email, password_hash, role, is_active)
             VALUES (%s, %s, crypt(%s, gen_salt('bf')), 'student', TRUE)
             ON CONFLICT (username) DO NOTHING
             RETURNING user_id
-        """, (username, email, 'student123'))
+        """, (username, email, temp_password))
 
         result = cur.fetchone()
         if result is None:
@@ -374,9 +377,9 @@ def main():
     parser = argparse.ArgumentParser(description='Migrate EduPulse CSV data to PostgreSQL')
     parser.add_argument('--host', default='localhost')
     parser.add_argument('--port', type=int, default=5432)
-    parser.add_argument('--dbname', default='edupulse')
-    parser.add_argument('--user', default='edupulse_app')
-    parser.add_argument('--password', default='edupulse_pass')
+    parser.add_argument('--dbname', default='EduPulse AI')
+    parser.add_argument('--user', default='postgres')
+    parser.add_argument('--password', default='')
     args = parser.parse_args()
 
     print("=" * 60)

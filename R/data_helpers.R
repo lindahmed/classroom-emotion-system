@@ -4,19 +4,10 @@
 source("R/db_queries.R")
 
 # Use PostgreSQL as primary source, with CSV fallback
-USE_DATABASE <- TRUE
+USE_DATABASE <- tolower(Sys.getenv("EDUPULSE_USE_DB", "true")) %in% c("1", "true", "yes")
 
-load_emotion_data <- function(path = "data/emotion_records.csv") {
-  if (USE_DATABASE) {
-    tryCatch({
-      df <- db_query("SELECT * FROM vw_emotion_records_flat", list())
-      return(df)
-    }, error = function(e) {
-      message(paste("Database load failed, falling back to CSV:", e$message))
-    })
-  }
-
-  # CSV fallback
+# CSV loaders (explicit fallback paths)
+load_emotion_data_csv <- function(path = "data/emotion_records.csv") {
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_all_mock_data()
@@ -32,17 +23,7 @@ load_emotion_data <- function(path = "data/emotion_records.csv") {
   df
 }
 
-load_lecture_schedule <- function(path = "data/lecture_schedule.csv") {
-  if (USE_DATABASE) {
-    tryCatch({
-      df <- db_query("SELECT * FROM vw_lecture_schedule", list())
-      return(df)
-    }, error = function(e) {
-      message(paste("Database load failed, falling back to CSV:", e$message))
-    })
-  }
-
-  # CSV fallback
+load_lecture_schedule_csv <- function(path = "data/lecture_schedule.csv") {
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_lecture_schedule(path)
@@ -57,19 +38,7 @@ load_lecture_schedule <- function(path = "data/lecture_schedule.csv") {
   df
 }
 
-load_semester_weeks <- function(path = "data/semester_weeks.csv") {
-  if (USE_DATABASE) {
-    tryCatch({
-      return(db_query(
-        "SELECT semester_id, academic_week, week_label, start_date, end_date, status::text AS status FROM semester_weeks ORDER BY academic_week",
-        list()
-      ))
-    }, error = function(e) {
-      message(paste("Database load failed, falling back to CSV:", e$message))
-    })
-  }
-
-  # CSV fallback
+load_semester_weeks_csv <- function(path = "data/semester_weeks.csv") {
   if (!file.exists(path)) {
     source("R/generate_sample_data.R", local = TRUE)
     generate_semester_weeks(path)
@@ -81,6 +50,44 @@ load_semester_weeks <- function(path = "data/semester_weeks.csv") {
       end_date = as.Date(end_date)
     )
   df
+}
+
+load_emotion_data <- function(path = "data/emotion_records.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      df <- db_query("SELECT * FROM vw_emotion_records_flat", list())
+      return(df)
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+  load_emotion_data_csv(path)
+}
+
+load_lecture_schedule <- function(path = "data/lecture_schedule.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      df <- db_query("SELECT * FROM vw_lecture_schedule", list())
+      return(df)
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+  load_lecture_schedule_csv(path)
+}
+
+load_semester_weeks <- function(path = "data/semester_weeks.csv") {
+  if (USE_DATABASE) {
+    tryCatch({
+      return(db_query(
+        "SELECT semester_id, academic_week, week_label, start_date, end_date, status::text AS status FROM semester_weeks ORDER BY academic_week",
+        list()
+      ))
+    }, error = function(e) {
+      message(paste("Database load failed, falling back to CSV:", e$message))
+    })
+  }
+  load_semester_weeks_csv(path)
 }
 
 load_courses <- function(path = "data/courses.csv") {

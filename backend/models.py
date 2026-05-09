@@ -4,7 +4,7 @@ models.py — Pydantic models for EduPulse API request/response validation
 
 from datetime import datetime, date, time
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from enum import Enum
 
 
@@ -38,8 +38,16 @@ class SourceType(str, Enum):
 
 # Request models
 class LoginRequest(BaseModel):
-    username: str
+    email: EmailStr
     password: str
+
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    role: UserRole
+    institution_id: str = Field(..., min_length=2)
+    full_name: Optional[str] = None
 
 
 class EmotionRecordCreate(BaseModel):
@@ -74,12 +82,10 @@ class StartSessionRequest(BaseModel):
 
 # Response models
 class LoginResponse(BaseModel):
-    success: bool
-    user_id: str
-    username: str
-    role: str
-    name: str
-    token: Optional[str] = None
+    access_token: str
+    token_type: str
+    expires_in: int
+    user: dict
 
 
 class EmotionRecordResponse(BaseModel):

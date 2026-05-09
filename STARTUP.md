@@ -79,6 +79,30 @@ Install the R packages:
 Rscript -e "install.packages(c('shiny', 'bslib', 'dplyr', 'ggplot2', 'readr', 'tidyr', 'lubridate', 'DT', 'htmltools', 'shinyjs', 'scales', 'httr', 'jsonlite'), repos='https://cloud.r-project.org')"
 ```
 
+## PostgreSQL Database (Optional)
+
+The dashboard can read from PostgreSQL or fall back to CSV files. Set the environment variables below before starting the app:
+
+```text
+EDUPULSE_USE_DB=true
+EDUPULSE_DB_HOST=localhost
+EDUPULSE_DB_PORT=5432
+EDUPULSE_DB_NAME=EduPulse AI
+EDUPULSE_DB_USER=admin
+EDUPULSE_DB_PASSWORD=your_password_here
+AUTH_SECRET=replace_with_a_long_random_secret
+TOKEN_EXPIRY_MINUTES=60
+```
+
+To create the database with the correct owner (example using psql):
+
+```sql
+CREATE USER admin WITH PASSWORD 'your_password_here';
+CREATE DATABASE "EduPulse AI" OWNER admin;
+```
+
+If you want CSV-only mode, set `EDUPULSE_USE_DB=false`.
+
 ## Start On Linux
 
 Terminal 1, backend:
@@ -137,11 +161,13 @@ Expected response:
 {"status":"ok"}
 ```
 
-## Demo Credentials
+## Account Setup
 
-- Admin: `admin` / `admin123`
-- Lecturer: `lecturer` / `lecturer123`
-- Student: `student` / `student123`
+Use real accounts instead of demo credentials:
+
+1. Open the dashboard login page.
+2. Click **Sign Up** and create a user with a valid email + password.
+3. Sign in using that email/password.
 
 ## Known Face Images
 

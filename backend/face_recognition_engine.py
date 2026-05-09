@@ -1,5 +1,5 @@
 ﻿from deepface import DeepFace
-from face_registry import KNOWN_FACES_PATH
+from .face_registry import KNOWN_FACES_PATH
 import tempfile
 import os
 

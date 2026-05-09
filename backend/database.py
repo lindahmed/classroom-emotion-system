@@ -6,13 +6,51 @@ import os
 import psycopg2
 from psycopg2 import pool
 from contextlib import contextmanager
+from pathlib import Path
+from urllib.parse import unquote, urlparse
 
+
+def _load_env_file():
+    for path in (Path(__file__).resolve().parents[1] / ".env", Path(__file__).resolve().parent / ".env"):
+        if not path.exists():
+            continue
+        for raw_line in path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+def _config_from_database_url():
+    database_url = os.getenv("DATABASE_URL") or os.getenv("EDUPULSE_DATABASE_URL")
+    if not database_url:
+        return {}
+
+    parsed = urlparse(database_url)
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        return {}
+
+    return {
+        "host": parsed.hostname or "localhost",
+        "port": parsed.port or 5432,
+        "dbname": unquote(parsed.path.lstrip("/")),
+        "user": unquote(parsed.username or ""),
+        "password": unquote(parsed.password or ""),
+    }
+
+
+_load_env_file()
+_url_config = _config_from_database_url()
+
+# FIXED: Changed default dbname from "EduPulse AI" (with space) to "edupulse_ai" (no space)
+# PostgreSQL database names should not contain spaces
 DB_CONFIG = {
-    "host": os.getenv("EDUPULSE_DB_HOST", "localhost"),
-    "port": int(os.getenv("EDUPULSE_DB_PORT", "5432")),
-    "dbname": os.getenv("EDUPULSE_DB_NAME", "edupulse"),
-    "user": os.getenv("EDUPULSE_DB_USER", "edupulse_app"),
-    "password": os.getenv("EDUPULSE_DB_PASSWORD", "edupulse_pass"),
+    "host": os.getenv("EDUPULSE_DB_HOST", _url_config.get("host", "localhost")),
+    "port": int(os.getenv("EDUPULSE_DB_PORT", str(_url_config.get("port", 5432)))),
+    "dbname": os.getenv("EDUPULSE_DB_NAME", _url_config.get("dbname", "edupulse_ai")),
+    "user": os.getenv("EDUPULSE_DB_USER", _url_config.get("user", "admin")),
+    "password": os.getenv("EDUPULSE_DB_PASSWORD", _url_config.get("password", "")),
 }
 
 _connection_pool = None
@@ -21,11 +59,31 @@ _connection_pool = None
 def init_db():
     """Initialize the connection pool. Call at FastAPI startup."""
     global _connection_pool
-    _connection_pool = pool.ThreadedConnectionPool(
-        minconn=1,
-        maxconn=10,
-        **DB_CONFIG
-    )
+    
+    print(f"\n{'='*60}")
+    print("STARTUP: Connecting to PostgreSQL...")
+    print(f"Config: host={DB_CONFIG['host']}, port={DB_CONFIG['port']}, dbname={DB_CONFIG['dbname']}, user={DB_CONFIG['user']}")
+    print(f"{'='*60}\n")
+    
+    try:
+        _connection_pool = pool.ThreadedConnectionPool(
+            minconn=1,
+            maxconn=10,
+            **DB_CONFIG
+        )
+        print("✓ Connection pool created successfully")
+    except psycopg2.OperationalError as e:
+        print(f"✗ Database connection failed: {e}")
+        print(f"\nPlease ensure:")
+        print(f"  1. PostgreSQL is running on {DB_CONFIG['host']}:{DB_CONFIG['port']}")
+        print(f"  2. Database '{DB_CONFIG['dbname']}' exists")
+        print(f"  3. User '{DB_CONFIG['user']}' has access")
+        print(f"  4. Password is correct (if required)")
+        print(f"\nTo create the database, run:")
+        print(f"  CREATE DATABASE {DB_CONFIG['dbname']};")
+        raise
+    
+    ensure_auth_schema()
     return _connection_pool
 
 
@@ -40,6 +98,8 @@ def close_db():
 @contextmanager
 def get_connection():
     """Get a connection from the pool. Use as context manager."""
+    if _connection_pool is None:
+        init_db()
     conn = _connection_pool.getconn()
     try:
         yield conn
@@ -78,3 +138,77 @@ def execute_many(sql, params_list):
         with conn.cursor() as cur:
             cur.executemany(sql, params_list)
             return cur.rowcount
+
+
+def ensure_auth_schema():
+    """Verify auth tables exist and create them if missing."""
+    required_tables = {"users", "students", "lecturers", "admins", "login_sessions"}
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Check existing tables
+            cur.execute(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                """
+            )
+            existing_tables = {row[0] for row in cur.fetchall()}
+            missing_tables = sorted(required_tables - existing_tables)
+            
+            if missing_tables:
+                print(f"\n⚠ Missing tables: {', '.join(missing_tables)}")
+                print("Creating schema from database/schema.sql...")
+                
+                schema_path = Path(__file__).resolve().parent.parent / "database" / "schema.sql"
+                if not schema_path.exists():
+                    raise RuntimeError(
+                        f"Schema file not found at {schema_path}\n"
+                        "Cannot initialize database schema."
+                    )
+                
+                try:
+                    schema_sql = schema_path.read_text(encoding="utf-8")
+                    cur.execute(schema_sql)
+                    print("✓ Schema created successfully\n")
+                except Exception as e:
+                    raise RuntimeError(f"Failed to create schema: {e}")
+            else:
+                print("✓ All required tables exist\n")
+
+            # Ensure institution_id column exists
+            try:
+                cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS institution_id VARCHAR(20)")
+                cur.execute(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_institution_id_unique
+                    ON users (lower(institution_id))
+                    WHERE institution_id IS NOT NULL
+                    """
+                )
+            except Exception as e:
+                print(f"Note: Could not add institution_id column: {e}")
+    
+    # Apply seed data
+    apply_seed_data()
+
+
+def apply_seed_data():
+    """Apply seed data from database/seed.sql if users table is empty."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Check if users table already has data
+            cur.execute("SELECT COUNT(*) FROM users;")
+            user_count = cur.fetchone()[0]
+            
+            if user_count == 0:
+                print("Applying seed data...")
+                seed_path = Path(__file__).resolve().parent.parent / "database" / "seed.sql"
+                if seed_path.exists():
+                    try:
+                        seed_sql = seed_path.read_text(encoding="utf-8")
+                        cur.execute(seed_sql)
+                        print("Seed data applied successfully\n")
+                    except Exception as e:
+                        print(f"Warning: Seed data application had issues: {e}\n")

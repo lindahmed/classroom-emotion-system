@@ -116,6 +116,7 @@ CREATE TABLE users (
     email            VARCHAR(255) NOT NULL UNIQUE,
     password_hash    VARCHAR(255) NOT NULL,
     role             user_role NOT NULL DEFAULT 'student',
+    institution_id   VARCHAR(20) UNIQUE,
     is_active        BOOLEAN DEFAULT TRUE,
     last_login_at    TIMESTAMP WITH TIME ZONE,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -196,7 +197,7 @@ COMMENT ON TABLE semester_weeks IS 'Week definitions within a semester';
 -- 10. Student Groups
 CREATE TABLE student_groups (
     group_id         SERIAL PRIMARY KEY,
-    group_code       VARCHAR(10) NOT NULL,
+    group_code       VARCHAR(20) NOT NULL,
     group_name       VARCHAR(50) NOT NULL,
     course_id        INTEGER NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
     semester_id      VARCHAR(20) NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
