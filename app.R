@@ -61,7 +61,8 @@ app_data <- reactiveValues(
   selected_lecture_id = NULL,
   start_session_request = NULL,
   live_face_response = NULL,
-  live_attendance = NULL
+  live_attendance = NULL,
+  session_mode = "full"
 )
 
 # Authenticate user via PostgreSQL (email + password)
@@ -288,6 +289,7 @@ ui <- fluidPage(
       "var cameraStream = null;\n" ,
       "var cameraInterval = null;\n" ,
       "var currentLectureId = null;\n" ,
+      "var currentSessionMode = 'full';\n" ,
       "var eduPulseApiToken = null;\n" ,
       "var cameraReady = false;\n" ,
       "function startMonitorCamera(message) {\n" ,
@@ -301,6 +303,7 @@ ui <- fluidPage(
       "  }\n" ,
       "  if (cameraStream) { stopMonitorCamera(); }\n" ,
       "  currentLectureId = message.lecture_id;\n" ,
+      "  currentSessionMode = message.mode || 'full';\n" ,
       "  status.innerText = 'Requesting camera access...';\n" ,
       "  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {\n" ,
       "    status.innerText = 'Camera error: getUserMedia not supported (need HTTPS or localhost).';\n" ,
@@ -338,6 +341,7 @@ ui <- fluidPage(
       "  if (status) status.innerText = 'Camera stopped.';\n" ,
       "  if (video) { video.pause(); video.srcObject = null; }\n" ,
       "  currentLectureId = null;\n" ,
+      "  currentSessionMode = 'full';\n" ,
       "}\n" ,
       "function sendCaptureFrame() {\n" ,
       "  if (!cameraStream || !currentLectureId || !cameraReady) return;\n" ,
@@ -354,6 +358,7 @@ ui <- fluidPage(
       "    var data = new FormData();\n" ,
       "    data.append('file', blob, 'frame.jpg');\n" ,
       "    data.append('lecture_id', currentLectureId);\n" ,
+      "    data.append('mode', currentSessionMode);\n" ,
       "    var headers = {};\n" ,
       "    if (eduPulseApiToken) { headers['Authorization'] = 'Bearer ' + eduPulseApiToken; }\n" ,
       "    fetch('http://localhost:8000/analyze-attendance-frame', { method: 'POST', body: data, headers: headers })\n" ,
@@ -685,53 +690,60 @@ ui <- fluidPage(
             ),
 
             fluidRow(
-              column(2, div(class = "metric-card",
-                            div(class = "metric-icon", "💡"),
-                            div(class = "metric-value", textOutput("card_engagement")),
-                            div(class = "metric-label", "Avg Engagement")
-              )),
-              column(2, div(class = "metric-card",
-                            div(class = "metric-icon", "🎯"),
-                            div(class = "metric-value", textOutput("card_focus")),
-                            div(class = "metric-label", "Avg Focus")
-              )),
-              column(2, div(class = "metric-card",
+              column(4, div(class = "metric-card",
                             div(class = "metric-icon", "✅"),
                             div(class = "metric-value", textOutput("card_attendance")),
                             div(class = "metric-label", "Attendance")
               )),
-              column(2, div(class = "metric-card",
-                            div(class = "metric-icon", "❓"),
-                            div(class = "metric-value", textOutput("card_confusion")),
-                            div(class = "metric-label", "Confusion Rate")
-              )),
-              column(2, div(class = "metric-card",
+              column(4, div(class = "metric-card",
                             div(class = "metric-icon", "👥"),
                             div(class = "metric-value", textOutput("card_present")),
                             div(class = "metric-label", "Students Present")
-              )),
-              column(2, div(class = "metric-card",
-                            div(class = "metric-icon", "😊"),
-                            div(class = "metric-value", textOutput("card_dominant_emotion")),
-                            div(class = "metric-label", "Dominant Emotion")
               ))
             ),
-            
-            div(class = "ep-card",
-                div(class = "ep-card-header", "🧠 Narrative Insights"),
-                div(style = "color:#94a3b8; font-size:0.9rem;", textOutput("narrative_insights"))
-            ),
-            
-            fluidRow(
-              column(6, div(class = "ep-card",
-                            div(class = "ep-card-header", "📈 Engagement, Focus & Confusion Timeline"),
-                            plotOutput("chart_timeline", height = "300px")
-              )),
-              column(6, div(class = "ep-card",
-                            div(class = "ep-card-header", "🎭 Emotion Distribution"),
-                            plotOutput("chart_emotions", height = "300px")
-              ))
-            )
+
+            shinyjs::hidden(div(
+              id = "emotion_metrics_panel",
+
+              fluidRow(
+                column(3, div(class = "metric-card",
+                              div(class = "metric-icon", "💡"),
+                              div(class = "metric-value", textOutput("card_engagement")),
+                              div(class = "metric-label", "Avg Engagement")
+                )),
+                column(3, div(class = "metric-card",
+                              div(class = "metric-icon", "🎯"),
+                              div(class = "metric-value", textOutput("card_focus")),
+                              div(class = "metric-label", "Avg Focus")
+                )),
+                column(3, div(class = "metric-card",
+                              div(class = "metric-icon", "❓"),
+                              div(class = "metric-value", textOutput("card_confusion")),
+                              div(class = "metric-label", "Confusion Rate")
+                )),
+                column(3, div(class = "metric-card",
+                              div(class = "metric-icon", "😊"),
+                              div(class = "metric-value", textOutput("card_dominant_emotion")),
+                              div(class = "metric-label", "Dominant Emotion")
+                ))
+              ),
+
+              div(class = "ep-card",
+                  div(class = "ep-card-header", "🧠 Narrative Insights"),
+                  div(style = "color:#94a3b8; font-size:0.9rem;", textOutput("narrative_insights"))
+              ),
+
+              fluidRow(
+                column(6, div(class = "ep-card",
+                              div(class = "ep-card-header", "📈 Engagement, Focus & Confusion Timeline"),
+                              plotOutput("chart_timeline", height = "300px")
+                )),
+                column(6, div(class = "ep-card",
+                              div(class = "ep-card-header", "🎭 Emotion Distribution"),
+                              plotOutput("chart_emotions", height = "300px")
+                ))
+              )
+            ))
           )),
           
           # ── Report ────────────────────────────────────────────────────────
@@ -1495,17 +1507,22 @@ server <- function(input, output, session) {
   # ── Start session from schedule (fully async — never blocks the UI) ────────
   observeEvent(input$start_session_clicked, {
     req(input$start_session_clicked)
-    lecture_id <- input$start_session_clicked
+    parts <- strsplit(input$start_session_clicked, "\\|")[[1]]
+    lecture_id <- parts[1]
+    session_mode <- if (length(parts) >= 2) parts[2] else "full"
     api_token  <- app_data$api_token
 
+    app_data$session_mode <- session_mode
     app_data$selected_lecture_id <- lecture_id
     app_data$live_face_response <- NULL
     show_panel("monitor")
-    showNotification("Starting session...", type = "message", duration = 5)
+    showNotification(paste0("Starting ", session_mode, " session..."), type = "message", duration = 5)
 
     future({
       url <- paste0(API_BASE_URL, "/start-session/", lecture_id)
       resp <- httr::POST(url,
+        body = list(mode = session_mode),
+        encode = "form",
         add_headers(Authorization = paste("Bearer", api_token)),
         httr::timeout(15))
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) < 300) {
@@ -1516,10 +1533,10 @@ server <- function(input, output, session) {
       }
     }) %...>% (function(result) {
       if (isTRUE(result$success)) {
-        showNotification(paste("Session started for lecture:", lecture_id), type = "message", duration = 3)
+        showNotification(paste0("Session started (", session_mode, " mode)"), type = "message", duration = 3)
         app_data$live_attendance <- result$data$attendance
         shinyjs::delay(300, {
-          session$sendCustomMessage("startCamera", list(lecture_id = lecture_id))
+          session$sendCustomMessage("startCamera", list(lecture_id = lecture_id, mode = session_mode))
         })
       } else {
         showNotification(paste("Failed to start session:", result$body), type = "error", duration = 10)
@@ -1527,6 +1544,14 @@ server <- function(input, output, session) {
     }) %...!% (function(err) {
       showNotification(paste("Session error:", err$message), type = "error", duration = 10)
     })
+  })
+
+  observeEvent(app_data$session_mode, {
+    if (app_data$session_mode == "full") {
+      shinyjs::show("emotion_metrics_panel")
+    } else {
+      shinyjs::hide("emotion_metrics_panel")
+    }
   })
 
   observeEvent(input$stop_attendance_btn, {
@@ -1606,7 +1631,10 @@ server <- function(input, output, session) {
         Actions = paste0(
           '<button class="btn btn-sm btn-success" style="font-size:0.72rem;padding:2px 8px;margin-right:4px;" ',
           'onclick="Shiny.setInputValue(\'start_session_clicked\',\'', lecture_id,
-          '\',{priority:\'event\'})">📹 Start Session</button>',
+          '|attendance\',{priority:\'event\'})">Attendance</button>',
+          '<button class="btn btn-sm btn-warning" style="font-size:0.72rem;padding:2px 8px;margin-right:4px;" ',
+          'onclick="Shiny.setInputValue(\'start_session_clicked\',\'', lecture_id,
+          '|full\',{priority:\'event\'})">Full Monitor</button>',
           '<button class="btn btn-sm btn-primary" style="font-size:0.72rem;padding:2px 10px;" ',
           'onclick="Shiny.setInputValue(\'view_lecture_clicked\',\'', lecture_id,
           '\',{priority:\'event\'})">▶ View</button>'

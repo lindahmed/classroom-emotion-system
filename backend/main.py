@@ -251,6 +251,14 @@ def _require_ml_engines():
         )
 
 
+def _require_face_engine():
+    if recognize_faces is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Face recognition engine is unavailable. Install backend dependencies first.",
+        )
+
+
 def _attendance_error(exc: AttendanceServiceError):
     raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
@@ -272,19 +280,24 @@ async def recognize_face_endpoint(
 async def analyze_frame(
     file: UploadFile = File(...),
     lecture_id: str = Form(...),
+    mode: str = Form("full"),
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
-    _require_ml_engines()
+    _require_face_engine()
+    if mode == "full":
+        _require_ml_engines()
     image_bytes = await file.read()
     try:
         recognition = recognize_faces(image_bytes)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    try:
-        emotion_data = analyze_emotion(image_bytes)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    emotion_data = None
+    if mode == "full":
+        try:
+            emotion_data = analyze_emotion(image_bytes)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
     persisted = []
     skipped = []
     for match in recognition.get("recognized", []):
@@ -325,17 +338,19 @@ async def analyze_frame(
         "absent_count": attendance["absent_count"],
         "expected_students": attendance["expected_students"],
         "session_status": attendance["session_status"],
+        "mode": mode,
     }
 
 
 @app.post("/start-session/{lecture_id}", tags=["sessions"])
 def start_session(
     lecture_id: str,
+    mode: str = Form("full"),
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
     try:
         upsert_lecture_session_start(lecture_id)
-        return start_attendance_session(lecture_id, current_user.get("id"))
+        return start_attendance_session(lecture_id, current_user.get("id"), session_mode=mode)
     except AttendanceServiceError as exc:
         _attendance_error(exc)
 

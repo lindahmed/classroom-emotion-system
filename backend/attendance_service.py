@@ -65,17 +65,19 @@ def _lecture_context(cur, lecture_code: str) -> dict[str, Any]:
     }
 
 
-def _active_session_status(cur, lecture_id: int) -> str | None:
+def _active_session_status(cur, lecture_id: int) -> dict[str, Any] | None:
     cur.execute(
         """
-        SELECT status
+        SELECT status, COALESCE(session_mode, 'full') AS session_mode
         FROM attendance_sessions
         WHERE lecture_id = %s
         """,
         (lecture_id,),
     )
     row = cur.fetchone()
-    return row[0] if row else None
+    if row is None:
+        return None
+    return {"status": row[0], "session_mode": row[1]}
 
 
 def _attendance_summary(cur, context: dict[str, Any]) -> dict[str, Any]:
@@ -112,7 +114,8 @@ def _attendance_summary(cur, context: dict[str, Any]) -> dict[str, Any]:
     ]
     present_count = sum(1 for row in attendance if row["status"] in {"Present", "Returned"})
     absent_count = sum(1 for row in attendance if row["status"] == "Absent")
-    session_status = _active_session_status(cur, context["lecture_id"])
+    session_info = _active_session_status(cur, context["lecture_id"])
+    session_status = session_info["status"] if session_info else None
     return {
         **context,
         "session_status": session_status,
@@ -122,22 +125,23 @@ def _attendance_summary(cur, context: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def start_attendance_session(lecture_code: str, started_by_user_id: int | None) -> dict[str, Any]:
+def start_attendance_session(lecture_code: str, started_by_user_id: int | None, session_mode: str = "full") -> dict[str, Any]:
     with get_connection() as conn:
         with conn.cursor() as cur:
             context = _lecture_context(cur, lecture_code)
             cur.execute(
                 """
-                INSERT INTO attendance_sessions (lecture_id, started_by, started_at, ended_at, status)
-                VALUES (%s, %s, NOW(), NULL, 'active')
+                INSERT INTO attendance_sessions (lecture_id, started_by, started_at, ended_at, status, session_mode)
+                VALUES (%s, %s, NOW(), NULL, 'active', %s)
                 ON CONFLICT (lecture_id) DO UPDATE SET
                     started_by = EXCLUDED.started_by,
                     started_at = NOW(),
                     ended_at = NULL,
                     status = 'active',
+                    session_mode = EXCLUDED.session_mode,
                     updated_at = NOW()
                 """,
-                (context["lecture_id"], started_by_user_id),
+                (context["lecture_id"], started_by_user_id, session_mode),
             )
             cur.execute(
                 """
@@ -165,6 +169,7 @@ def start_attendance_session(lecture_code: str, started_by_user_id: int | None) 
             return {
                 "message": f"Session started for lecture {lecture_code}",
                 "status": "started",
+                "session_mode": session_mode,
                 **_attendance_summary(cur, context),
             }
 
@@ -202,13 +207,14 @@ def get_attendance(lecture_code: str) -> dict[str, Any]:
 def mark_student_present(
     lecture_code: str,
     student_code: str,
-    emotion_data: dict[str, Any],
+    emotion_data: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     seen_at = datetime.now(timezone.utc)
     with get_connection() as conn:
         with conn.cursor() as cur:
             context = _lecture_context(cur, lecture_code)
-            if _active_session_status(cur, context["lecture_id"]) != "active":
+            session_info = _active_session_status(cur, context["lecture_id"])
+            if session_info is None or session_info["status"] != "active":
                 raise AttendanceServiceError(
                     f"Attendance session for {lecture_code} is not active",
                     409,
@@ -245,38 +251,40 @@ def mark_student_present(
                 """,
                 (student_pk, context["lecture_id"], seen_at, seen_at),
             )
-            cur.execute(
-                """
-                INSERT INTO emotion_records (
-                    student_id, lecture_id, recorded_at, time_minute, emotion,
-                    confidence, engagement_score, focus_score, is_present,
-                    left_room, absence_duration_minutes, source, model_name
+            record_id = None
+            if emotion_data is not None:
+                cur.execute(
+                    """
+                    INSERT INTO emotion_records (
+                        student_id, lecture_id, recorded_at, time_minute, emotion,
+                        confidence, engagement_score, focus_score, is_present,
+                        left_room, absence_duration_minutes, source, model_name
+                    )
+                    VALUES (%s, %s, %s, 0, %s, %s, %s, %s, TRUE, FALSE, 0,
+                            'live_camera', 'EduPulse_v1.0')
+                    RETURNING record_id
+                    """,
+                    (
+                        student_pk,
+                        context["lecture_id"],
+                        seen_at,
+                        emotion_data.get("emotion", "Neutral"),
+                        float(emotion_data.get("confidence", 0.5)),
+                        float(emotion_data.get("engagement_score", 0.65)),
+                        float(emotion_data.get("focus_score", 0.5)),
+                    ),
                 )
-                VALUES (%s, %s, %s, 0, %s, %s, %s, %s, TRUE, FALSE, 0,
-                        'live_camera', 'EduPulse_v1.0')
-                RETURNING record_id
-                """,
-                (
-                    student_pk,
-                    context["lecture_id"],
-                    seen_at,
-                    emotion_data.get("emotion", "Neutral"),
-                    float(emotion_data.get("confidence", 0.5)),
-                    float(emotion_data.get("engagement_score", 0.65)),
-                    float(emotion_data.get("focus_score", 0.5)),
-                ),
-            )
-            record_id = int(cur.fetchone()[0])
+                record_id = int(cur.fetchone()[0])
             return {
                 "record_id": record_id,
                 "student_id": resolved_code,
                 "student_name": student_name,
                 "lecture_id": lecture_code,
                 "timestamp": seen_at.isoformat(),
-                "emotion": emotion_data.get("emotion", "Neutral"),
-                "confidence": float(emotion_data.get("confidence", 0.5)),
-                "engagement_score": float(emotion_data.get("engagement_score", 0.65)),
-                "focus_score": float(emotion_data.get("focus_score", 0.5)),
+                "emotion": emotion_data.get("emotion", "Neutral") if emotion_data else None,
+                "confidence": float(emotion_data.get("confidence", 0.5)) if emotion_data else None,
+                "engagement_score": float(emotion_data.get("engagement_score", 0.65)) if emotion_data else None,
+                "focus_score": float(emotion_data.get("focus_score", 0.5)) if emotion_data else None,
                 "attendance_status": "Present",
                 "is_present": True,
                 "left_room": False,

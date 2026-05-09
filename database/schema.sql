@@ -318,6 +318,7 @@ CREATE TABLE attendance_sessions (
     started_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     ended_at         TIMESTAMP WITH TIME ZONE,
     status           VARCHAR(20) NOT NULL DEFAULT 'active',
+    session_mode     VARCHAR(20) NOT NULL DEFAULT 'full',
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CONSTRAINT chk_attendance_session_status CHECK (status IN ('active', 'completed', 'cancelled')),
