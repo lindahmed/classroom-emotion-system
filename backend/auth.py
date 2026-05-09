@@ -8,6 +8,9 @@ import hashlib
 import os
 import re
 import uuid
+import logging
+import smtplib
+from email.message import EmailMessage
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
@@ -23,6 +26,7 @@ PASSWORD_MIN_LENGTH = 8
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ROLE_PREFIXES = {"student": "S", "lecturer": "L", "admin": "A"}
 security = HTTPBearer(auto_error=False)
+logger = logging.getLogger(__name__)
 
 
 def _auth_secret() -> str:
@@ -44,6 +48,18 @@ def _hash_token(token: str) -> str:
 
 def _get_password_hash(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def _update_password_hash_pg(cur, user_id: int, new_password: str) -> None:
+    """Update password_hash using PostgreSQL pgcrypto crypt().
+
+    This keeps hashes compatible with the Shiny/R auth path which verifies via:
+      password_hash = crypt(plain, password_hash)
+    """
+    cur.execute(
+        "UPDATE users SET password_hash = crypt(%s, gen_salt('bf')), updated_at = NOW() WHERE user_id = %s",
+        (new_password, int(user_id)),
+    )
 
 
 def _verify_password(password: str, password_hash: str) -> bool:
@@ -324,11 +340,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     token_hash = _hash_token(token)
     with get_connection() as conn:
         with conn.cursor() as cur:
+            # Single query: validate session + fetch user public fields.
             cur.execute(
                 """
-                SELECT u.user_id
+                SELECT
+                    u.user_id,
+                    u.email,
+                    u.role::text AS role,
+                    u.institution_id,
+                    u.is_active,
+                    COALESCE(a.full_name, l.full_name, s.full_name, split_part(u.email, '@', 1)) AS name,
+                    COALESCE(u.institution_id, l.lecturer_code, s.student_code) AS user_code
                 FROM login_sessions ls
                 JOIN users u ON u.user_id = ls.user_id
+                LEFT JOIN admins a ON a.user_id = u.user_id
+                LEFT JOIN lecturers l ON l.user_id = u.user_id
+                LEFT JOIN students s ON s.user_id = u.user_id
                 WHERE ls.session_id = %s
                   AND ls.user_id = %s
                   AND ls.token_hash = %s
@@ -346,9 +373,17 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                     detail="Session is invalid or expired",
                 )
 
-    user = _query_user_public(int(user_id))
-    user["token"] = token
-    user["session_id"] = session_id
+    user = {
+        "id": row[0],
+        "email": row[1],
+        "role": row[2],
+        "institution_id": row[3],
+        "is_active": row[4],
+        "name": row[5],
+        "user_code": row[6],
+        "token": token,
+        "session_id": session_id,
+    }
     return user
 
 
@@ -366,8 +401,45 @@ def require_roles(*allowed_roles: str):
 
 def _generate_verification_code() -> str:
     """Generate a 6-digit verification code."""
-    import random
-    return "".join(str(random.randint(0, 9)) for _ in range(6))
+    import secrets
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _smtp_config() -> Dict[str, Any]:
+    return {
+        "host": os.getenv("SMTP_HOST", "").strip(),
+        "port": int(os.getenv("SMTP_PORT", "587")),
+        "user": os.getenv("SMTP_USER", "").strip(),
+        "password": os.getenv("SMTP_PASSWORD", "").strip(),
+        "from_email": os.getenv("SMTP_FROM_EMAIL", "").strip() or os.getenv("SMTP_USER", "").strip(),
+        "from_name": os.getenv("SMTP_FROM_NAME", "EduPulse AI").strip() or "EduPulse AI",
+        "use_tls": os.getenv("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes"},
+    }
+
+
+def _send_password_reset_email(to_email: str, verification_code: str) -> None:
+    cfg = _smtp_config()
+    if not cfg["host"] or not cfg["from_email"]:
+        raise RuntimeError("SMTP is not configured (set SMTP_HOST/SMTP_USER/SMTP_PASSWORD/SMTP_FROM_EMAIL)")
+
+    msg = EmailMessage()
+    msg["Subject"] = "EduPulse AI password reset code"
+    msg["From"] = f"{cfg['from_name']} <{cfg['from_email']}>"
+    msg["To"] = to_email
+    msg.set_content(
+        "You requested a password reset for EduPulse AI.\n\n"
+        f"Your verification code is: {verification_code}\n\n"
+        "If you did not request this, you can ignore this email.\n"
+    )
+
+    with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as smtp:
+        smtp.ehlo()
+        if cfg["use_tls"]:
+            smtp.starttls()
+            smtp.ehlo()
+        if cfg["user"] and cfg["password"]:
+            smtp.login(cfg["user"], cfg["password"])
+        smtp.send_message(msg)
 
 
 def request_password_change(email: str) -> Dict[str, str]:
@@ -406,9 +478,9 @@ def request_password_change(email: str) -> Dict[str, str]:
                 (user_id, code_hash, expires_at),
             )
 
-    print(f"[VERIFICATION] Email: {normalized_email}")
-    print(f"[VERIFICATION] Code: {verification_code}")
-    print(f"[VERIFICATION] Valid for 30 minutes")
+    # Send real email via SMTP.
+    _send_password_reset_email(normalized_email, verification_code)
+    logger.info("Password reset code emailed to %s (valid 30 minutes)", normalized_email)
 
     return {"message": "Verification code sent to email", "email": normalized_email}
 
@@ -449,16 +521,38 @@ def verify_and_change_password(email: str, verification_code: str, new_password:
 
             user_id, reset_id = row
 
-            new_password_hash = _get_password_hash(new_password)
-
-            cur.execute(
-                "UPDATE users SET password_hash = %s, updated_at = NOW() WHERE user_id = %s",
-                (new_password_hash, user_id),
-            )
+            _update_password_hash_pg(cur, user_id, new_password)
 
             cur.execute(
                 "UPDATE password_reset_tokens SET used_at = NOW() WHERE reset_id = %s",
                 (reset_id,),
             )
+
+    return {"message": "Password changed successfully"}
+
+
+def change_password_authenticated(user_id: int, old_password: str, new_password: str) -> Dict[str, str]:
+    """Change password for an already-authenticated user (no email verification)."""
+    if len(new_password) < PASSWORD_MIN_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Password must be at least {PASSWORD_MIN_LENGTH} characters",
+        )
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT password_hash FROM users WHERE user_id = %s AND is_active = TRUE LIMIT 1",
+                (int(user_id),),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+            current_hash = row[0]
+            if not _verify_password(old_password, current_hash):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Old password is incorrect")
+
+            _update_password_hash_pg(cur, int(user_id), new_password)
 
     return {"message": "Password changed successfully"}

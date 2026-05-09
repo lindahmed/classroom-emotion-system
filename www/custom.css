@@ -1635,6 +1635,66 @@ html[data-theme='light'] .login-sub {
   color: #64748b !important;
 }
 
+/* ── Login / Sign-up overlay (this app uses #login_overlay + .login-card) ──
+   Minimal-change polish:
+   - Wider, more “product” proportions on 1080p
+   - Make sign-up card scroll internally when extra fields appear
+*/
+#login_overlay {
+  /* Keep the cards centered, but allow breathing room on short viewports */
+  padding: 28px 18px;
+  /* app.R also styles this element; ensure tall auth cards are scrollable */
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 2.35rem;
+  box-sizing: border-box;
+}
+
+.login-logo {
+  font-family: var(--font-display, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  letter-spacing: -0.03em;
+}
+
+.login-sub {
+  max-width: 34ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.35;
+}
+
+/* Subtle separator under the header area without changing DOM */
+.login-sub {
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Login/sign-up cards: scroll internally when they grow tall */
+#login_card.login-card,
+#signup_card.login-card {
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Match spacing rhythm a bit tighter on shorter desktop heights */
+@media (max-height: 820px) {
+  .login-card {
+    padding: 2rem;
+  }
+  #login_card.login-card,
+  #signup_card.login-card {
+    max-height: calc(100vh - 40px);
+  }
+}
+
 /* ── Forms / inputs ────────────────────────────────────────────────────── */
 html[data-theme='light'] .form-control,
 html[data-theme='light'] .form-select,

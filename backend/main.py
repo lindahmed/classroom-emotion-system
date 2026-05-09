@@ -1,5 +1,7 @@
 from datetime import datetime
+from contextlib import asynccontextmanager
 import os
+import logging
 from typing import Dict, List, Literal, Optional
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -15,6 +17,7 @@ from .attendance_service import (
 )
 from .auth import (
     authenticate,
+    change_password_authenticated,
     create_account,
     get_current_user,
     require_roles,
@@ -22,8 +25,9 @@ from .auth import (
     request_password_change,
     verify_and_change_password,
 )
-from .database import close_db, init_db
+from .database import close_db, get_connection, init_db
 from .face_registry import refresh_known_students
+from .storage import upsert_lecture_session_start
 
 try:
     from .face_recognition_engine import recognize_face, recognize_faces
@@ -32,6 +36,28 @@ except Exception:
     recognize_face = None
     recognize_faces = None
     analyze_emotion = None
+
+
+logger = logging.getLogger(__name__)
+
+
+def _cors_config():
+    raw = os.getenv("EDUPULSE_CORS_ORIGINS", "").strip()
+    if not raw:
+        # Local dev: allow localhost/127.0.0.1 on any port (Shiny port varies).
+        return {"allow_origins": [], "allow_origin_regex": r"^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"}
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    return {"allow_origins": origins, "allow_origin_regex": None}
+
+
+def _configure_logging():
+    level_name = os.getenv("EDUPULSE_LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
+    root = logging.getLogger()
+    if not root.handlers:
+        logging.basicConfig(level=level, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    else:
+        root.setLevel(level)
 
 
 class KnownStudent(BaseModel):
@@ -100,48 +126,55 @@ class PasswordResetResponse(BaseModel):
     message: str
 
 
-app = FastAPI()
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        _configure_logging()
+        if os.getenv("SKIP_DB_INIT", "false").lower() not in {"1", "true", "yes"}:
+            init_db()
+        yield
+    finally:
+        close_db()
+
+
+app = FastAPI(
+    title="EduPulse AI Backend",
+    description="FastAPI backend for classroom emotion detection, attendance tracking, and analytics.",
+    version="0.3.0",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # Browsers reject allow_origins=["*"] when allow_credentials=True.
+    # Default: allow localhost/127.0.0.1 on any port.
+    # Override: set EDUPULSE_CORS_ORIGINS="http://localhost:3838,http://127.0.0.1:3838"
+    **_cors_config(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-@app.on_event("startup")
-def on_startup():
-    print("\n" + "="*60)
-    print("STARTUP: Initializing EduPulse AI backend...")
-    print("="*60)
-    try:
-        if os.getenv("SKIP_DB_INIT", "false").lower() in {"1", "true", "yes"}:
-            print("SKIP_DB_INIT is set, skipping database initialization")
-            return
-        print("STARTUP: Calling init_db()...")
-        init_db()
-        print("STARTUP: Database initialized successfully!")
-    except Exception as e:
-        print(f"STARTUP FAILED: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-    print("="*60 + "\n")
-
-
-@app.on_event("shutdown")
-def on_shutdown():
-    close_db()
-
-
-@app.get("/health")
+@app.get("/health", tags=["system"])
 def health():
-    return {"status": "ok"}
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+        return {"status": "ok", "db": "ok"}
+    except Exception as exc:
+        # Health should reflect DB availability for real deployments.
+        raise HTTPException(status_code=503, detail=f"Database unavailable: {exc}") from exc
 
 
-@app.post("/auth/signup", response_model=UserPublic, status_code=201)
+@app.post("/auth/signup", response_model=UserPublic, status_code=201, tags=["auth"])
 def signup(payload: SignupRequest):
     return create_account(
         email=payload.email,
@@ -152,7 +185,7 @@ def signup(payload: SignupRequest):
     )
 
 
-@app.post("/auth/login", response_model=AuthResponse)
+@app.post("/auth/login", response_model=AuthResponse, tags=["auth"])
 def login(payload: LoginRequest, request: Request):
     return authenticate(
         email=payload.email,
@@ -162,18 +195,18 @@ def login(payload: LoginRequest, request: Request):
     )
 
 
-@app.post("/auth/logout", response_model=LogoutResponse)
+@app.post("/auth/logout", response_model=LogoutResponse, tags=["auth"])
 def logout(current_user: Dict = Depends(get_current_user)):
     revoke_token(current_user["token"])
     return {"success": True, "message": "Logged out"}
 
 
-@app.post("/auth/request-password-change", response_model=PasswordChangeResponse)
+@app.post("/auth/request-password-change", response_model=PasswordChangeResponse, tags=["auth"])
 def request_password_change_endpoint(payload: PasswordChangeRequest):
     return request_password_change(payload.email)
 
 
-@app.post("/auth/verify-and-change-password", response_model=PasswordResetResponse)
+@app.post("/auth/verify-and-change-password", response_model=PasswordResetResponse, tags=["auth"])
 def verify_and_change_password_endpoint(payload: PasswordResetRequest):
     return verify_and_change_password(
         email=payload.email,
@@ -182,7 +215,16 @@ def verify_and_change_password_endpoint(payload: PasswordResetRequest):
     )
 
 
-@app.get("/auth/me", response_model=UserPublic)
+@app.post("/auth/change-password", response_model=PasswordResetResponse, tags=["auth"])
+def change_password_endpoint(payload: ChangePasswordRequest, current_user: Dict = Depends(get_current_user)):
+    return change_password_authenticated(
+        user_id=current_user["id"],
+        old_password=payload.old_password,
+        new_password=payload.new_password,
+    )
+
+
+@app.get("/auth/me", response_model=UserPublic, tags=["auth"])
 def me(current_user: Dict = Depends(get_current_user)):
     return {
         "id": current_user["id"],
@@ -195,7 +237,7 @@ def me(current_user: Dict = Depends(get_current_user)):
     }
 
 
-@app.get("/known-students", response_model=KnownStudentsResponse)
+@app.get("/known-students", response_model=KnownStudentsResponse, tags=["faces"])
 def get_known_students(current_user: Dict = Depends(get_current_user)):
     students = refresh_known_students()
     return {"students": students, "count": len(students)}
@@ -213,7 +255,7 @@ def _attendance_error(exc: AttendanceServiceError):
     raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
 
-@app.post("/recognize-face")
+@app.post("/recognize-face", tags=["faces"])
 async def recognize_face_endpoint(
     file: UploadFile = File(...),
     current_user: Dict = Depends(get_current_user),
@@ -226,7 +268,7 @@ async def recognize_face_endpoint(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-@app.post("/analyze-attendance-frame")
+@app.post("/analyze-attendance-frame", tags=["analytics"])
 async def analyze_frame(
     file: UploadFile = File(...),
     lecture_id: str = Form(...),
@@ -286,18 +328,19 @@ async def analyze_frame(
     }
 
 
-@app.post("/start-session/{lecture_id}")
+@app.post("/start-session/{lecture_id}", tags=["sessions"])
 def start_session(
     lecture_id: str,
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
     try:
+        upsert_lecture_session_start(lecture_id)
         return start_attendance_session(lecture_id, current_user.get("id"))
     except AttendanceServiceError as exc:
         _attendance_error(exc)
 
 
-@app.post("/stop-session/{lecture_id}")
+@app.post("/stop-session/{lecture_id}", tags=["sessions"])
 def stop_session(
     lecture_id: str,
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
@@ -308,7 +351,7 @@ def stop_session(
         _attendance_error(exc)
 
 
-@app.get("/attendance/{lecture_id}")
+@app.get("/attendance/{lecture_id}", tags=["sessions"])
 def attendance_status(
     lecture_id: str,
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
@@ -319,7 +362,7 @@ def attendance_status(
         _attendance_error(exc)
 
 
-@app.get("/session-status/{lecture_id}")
+@app.get("/session-status/{lecture_id}", tags=["sessions"])
 def get_session_status(
     lecture_id: str,
     current_user: Dict = Depends(require_roles("admin", "lecturer")),

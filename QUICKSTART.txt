@@ -1,6 +1,6 @@
 ================================================================================
 EduPulse AI - Classroom Emotion Detection & Analysis System
-Shiny Prototype (v0.1.0 - Mock Data)
+End-to-end Demo (v0.3.0 - Shiny + FastAPI + PostgreSQL)
 ================================================================================
 
 🎉 PROJECT COMPLETE
@@ -8,12 +8,12 @@ Shiny Prototype (v0.1.0 - Mock Data)
 All files have been created and the Shiny application is ready to run!
 
 ================================================================================
-FILE STRUCTURE
+FILE STRUCTURE (high level)
 ================================================================================
 
 classroom-emotion-system/
 ├── app.R                          ✓ Main Shiny application
-├── run_app.R                      ✓ Helper script to launch the app
+├── run_app.R                      ✓ Helper script to launch the Shiny app
 ├── CLAUDE.md                      ✓ Claude Code guidance
 ├── DESIGN.md                      ✓ Detailed architecture & design doc
 ├── README.md                      ✓ Complete user documentation
@@ -26,17 +26,27 @@ classroom-emotion-system/
 │   ├── analytics_helpers.R        - Metrics, clustering, insights computation
 │   └── ui_helpers.R               - Chart rendering, UI components
 │
-├── data/                          ✓ Data directory (auto-created)
-│   └── emotion_records.csv       - Auto-generated mock dataset (2,400 records)
+├── data/                          ✓ Mock datasets (committed)
+│   ├── emotion_records.csv
+│   ├── lecture_schedule.csv
+│   └── semester_weeks.csv
 │
 └── www/                           ✓ Static assets
     └── custom.css                - Dark theme styling (purple accent)
 
 ================================================================================
-QUICK START
+QUICK START (recommended)
 ================================================================================
 
-OPTION 1: RStudio (Recommended)
+OPTION 1: Start backend + Shiny (recommended)
+1. Backend:
+   python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+2. Shiny:
+   Rscript -e "shiny::runApp(appDir='.', host='127.0.0.1', port=3838, launch.browser=TRUE)"
+
+See STARTUP.md for full setup (DB env vars + SMTP).
+
+OPTION 2: RStudio (Shiny only)
 1. Open RStudio
 2. Open the project: File > Open Project > classroom-emotion-system.Rproj
 3. Run: shiny::runApp()
@@ -53,7 +63,7 @@ OPTION 3: RStudio - Source app.R
 3. Click "Run App" button (top-right)
 
 ================================================================================
-ACCOUNT LOGIN
+ACCOUNT LOGIN / PASSWORD RESET
 ================================================================================
 
 Create a real account from the Sign Up screen, then log in using:
@@ -61,6 +71,9 @@ Create a real account from the Sign Up screen, then log in using:
   Password: your chosen password
 
 No demo/default credentials are provided.
+
+Forgot password:
+  Use “Forgot password?” on the login page (requires SMTP configured in .env).
 
 ================================================================================
 FEATURES BUILT
@@ -217,11 +230,7 @@ Missing packages?
 FUTURE ROADMAP
 ================================================================================
 
-Phase 2 (Next): Python FastAPI Backend
-  - Real emotion detection (OpenCV, DeepFace)
-  - Video frame processing pipeline
-  - Real-time WebSocket updates
-  - API endpoints for Shiny integration
+Backend is now included (FastAPI + PostgreSQL). See backend/README_backend.md and STARTUP.md.
 
 Phase 3: Production Integration
   - SQLite database for persistent storage

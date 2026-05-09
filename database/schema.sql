@@ -485,30 +485,31 @@ CREATE INDEX idx_password_reset_user ON password_reset_tokens(user_id);
 -- VIEWS (backward-compatible with current CSV column names)
 -- =============================================================================
 
--- View 1: Replaces lecture_schedule.csv
-CREATE VIEW vw_lecture_schedule AS
+-- View 1: Replaces lecture_schedule.csv (column-compatible)
+-- NOTE: Shiny expects lecture_id to be the lecture_code string and status column name to be `status`.
+CREATE OR REPLACE VIEW vw_lecture_schedule AS
 SELECT
-    l.lecture_id,
-    l.lecture_code  AS lecture_id_str,
+    l.lecture_code  AS lecture_id,
     l.lecture_name,
     l.semester_id,
     l.academic_week,
     l.lecture_date,
     l.day_name,
-    l.start_time,
-    l.end_time,
-    l.status        AS lecture_status,
+    TO_CHAR(l.start_time, 'HH24:MI') AS start_time,
+    TO_CHAR(l.end_time,   'HH24:MI') AS end_time,
     c.course_id,
     c.course_code,
     c.course_name,
     sg.group_id,
     sg.group_code,
     sg.group_name,
-    lec.lecturer_id,
-    lec.lecturer_code AS lecturer_id_str,
-    lec.full_name   AS lecturer_name,
-    r.room_number   AS room,
-    (SELECT COUNT(*) FROM group_memberships gm WHERE gm.group_id = sg.group_id) AS expected_students
+    lec.lecturer_code AS lecturer_id,
+    lec.full_name     AS lecturer_name,
+    r.room_number     AS room,
+    (SELECT COUNT(*) FROM group_memberships gm WHERE gm.group_id = sg.group_id) AS expected_students,
+    l.status::text    AS status,
+    l.lecture_id      AS lecture_db_id,
+    lec.lecturer_id   AS lecturer_db_id
 FROM lectures l
 JOIN lecturer_course_assignments a ON l.assignment_id = a.assignment_id
 JOIN courses c ON a.course_id = c.course_id

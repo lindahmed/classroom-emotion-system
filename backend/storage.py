@@ -7,6 +7,87 @@ from datetime import datetime
 from .database import get_connection, execute_insert, execute_query
 
 
+def upsert_lecture_session_start(lecture_code: str, started_at: datetime | None = None):
+    """Create/update a session start time for a lecture (by lecture_code)."""
+    sql = """
+        INSERT INTO lecture_sessions (lecture_id, started_at, status)
+        SELECT
+            l.lecture_id,
+            %(started_at)s,
+            'started'
+        FROM lectures l
+        WHERE l.lecture_code = %(lecture_code)s
+        ON CONFLICT (lecture_id) DO UPDATE SET
+            started_at = EXCLUDED.started_at,
+            ended_at = NULL,
+            status = 'started'
+        RETURNING started_at
+    """
+    params = {
+        "lecture_code": lecture_code,
+        "started_at": started_at or datetime.now(),
+    }
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, params)
+                row = cur.fetchone()
+                return row[0] if row else None
+    except Exception:
+        # If DB is not initialized (tests) or lecture doesn't exist, treat as no-op.
+        return None
+
+
+def get_lecture_session_start(lecture_code: str):
+    """Fetch started_at for a lecture session (by lecture_code)."""
+    sql = """
+        SELECT ls.started_at
+        FROM lecture_sessions ls
+        JOIN lectures l ON l.lecture_id = ls.lecture_id
+        WHERE l.lecture_code = %s
+        LIMIT 1
+    """
+    rows = execute_query(sql, (lecture_code,))
+    if not rows:
+        return None
+    return rows[0].get("started_at")
+
+
+def get_attendance_row(student_code: str, lecture_code: str):
+    """Fetch a single attendance record (if any) for a student+lecture by codes."""
+    sql = """
+        SELECT
+            ar.status::text AS status,
+            ar.first_seen_at,
+            ar.last_seen_at,
+            COALESCE(ar.total_absence_minutes, 0) AS total_absence_minutes
+        FROM attendance_records ar
+        JOIN students s ON s.student_id = ar.student_id
+        JOIN lectures l ON l.lecture_id = ar.lecture_id
+        WHERE s.student_code = %s AND l.lecture_code = %s
+        LIMIT 1
+    """
+    rows = execute_query(sql, (student_code, lecture_code))
+    return rows[0] if rows else None
+
+
+def get_session_attendance(lecture_code: str):
+    """Return all attendance rows for a lecture (for session-status)."""
+    sql = """
+        SELECT
+            s.student_code AS student_id,
+            ar.status::text AS status,
+            ar.last_seen_at,
+            COALESCE(ar.total_absence_minutes, 0) AS total_absence_minutes
+        FROM attendance_records ar
+        JOIN students s ON s.student_id = ar.student_id
+        JOIN lectures l ON l.lecture_id = ar.lecture_id
+        WHERE l.lecture_code = %s
+        ORDER BY s.student_code
+    """
+    return execute_query(sql, (lecture_code,))
+
+
 def append_record(record: dict):
     """Insert an emotion detection record into PostgreSQL.
 

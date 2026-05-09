@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from .face_registry import KNOWN_FACES_PATH
 
 DeepFace = None
 
+logger = logging.getLogger(__name__)
 
 DISTANCE_COLUMNS = (
     "distance",
@@ -150,7 +152,7 @@ def recognize_faces(
         try:
             face_objs = _extract_faces(temp_path, detector_backend)
         except Exception as exc:
-            print(f"Error extracting faces: {exc}")
+            logger.exception("Error extracting faces: %s", exc)
             face_objs = []
 
         recognized_by_student: dict[str, dict[str, Any]] = {}
@@ -192,7 +194,7 @@ def recognize_faces(
             "recognized_any": bool(recognized),
         }
     except Exception as exc:
-        print(f"Error in recognition: {exc}")
+        logger.exception("Error in recognition: %s", exc)
         return {
             "recognized": [],
             "recognized_count": 0,

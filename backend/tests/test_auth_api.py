@@ -1,15 +1,12 @@
 import asyncio
 import os
-import pathlib
-import sys
 
 import pytest
 from fastapi import HTTPException
 
 os.environ["SKIP_DB_INIT"] = "true"
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
-from backend import auth, main  # noqa: E402
+from backend import auth, main
 
 
 class FakeRequest:
@@ -229,3 +226,20 @@ def test_analyze_attendance_frame_persists_all_recognized(monkeypatch):
     assert body["unknown_count"] == 1
     assert body["present_count"] == 2
     assert len(persisted) == 2
+
+
+def test_change_password_authenticated_endpoint(monkeypatch):
+    called = {"ok": False}
+
+    def fake_change_password_authenticated(user_id: int, old_password: str, new_password: str):
+        assert user_id == 2
+        assert old_password == "oldpass"
+        assert new_password == "NewStrongPass123"
+        called["ok"] = True
+        return {"message": "Password changed successfully"}
+
+    monkeypatch.setattr(main, "change_password_authenticated", fake_change_password_authenticated)
+    payload = main.ChangePasswordRequest(old_password="oldpass", new_password="NewStrongPass123")
+    body = main.change_password_endpoint(payload, current_user={"id": 2})
+    assert body["message"] == "Password changed successfully"
+    assert called["ok"] is True

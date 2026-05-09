@@ -1,7 +1,6 @@
 # RStudio Files
 .Rproj.user/
 .Rproject.user/
-*.Rproj
 .RData
 .Rhistory
 .Rapp.history
@@ -56,7 +55,12 @@ __pycache__/
 env/
 venv/
 ENV/
-.venv
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
 
 # Database Files (but not mock data CSVs)
 *.db
@@ -83,3 +87,4 @@ shiny-run.err.log
 shiny-run.out.log
 check_syntax.py
 QUICK_REFERENCE.md
+tools/*.log

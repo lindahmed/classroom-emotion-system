@@ -87,18 +87,25 @@ The dashboard can read from PostgreSQL or fall back to CSV files. Set the enviro
 EDUPULSE_USE_DB=true
 EDUPULSE_DB_HOST=localhost
 EDUPULSE_DB_PORT=5432
-EDUPULSE_DB_NAME=EduPulse AI
+EDUPULSE_DB_NAME=edupulse_ai
 EDUPULSE_DB_USER=admin
 EDUPULSE_DB_PASSWORD=your_password_here
 AUTH_SECRET=replace_with_a_long_random_secret
 TOKEN_EXPIRY_MINUTES=60
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+SMTP_FROM_EMAIL=your_email@gmail.com
+SMTP_FROM_NAME=EduPulse AI
+SMTP_USE_TLS=true
 ```
 
 To create the database with the correct owner (example using psql):
 
 ```sql
 CREATE USER admin WITH PASSWORD 'your_password_here';
-CREATE DATABASE "EduPulse AI" OWNER admin;
+CREATE DATABASE edupulse_ai OWNER admin;
 ```
 
 If you want CSV-only mode, set `EDUPULSE_USE_DB=false`.
