@@ -588,8 +588,10 @@ def ensure_student(cur, record: StudentImportRecord, group_id: int, department_i
     return student_pk
 
 
-def photo_extension(headers) -> str:
+def photo_extension(headers) -> str | None:
     content_type = headers.get("content-type", "").lower()
+    if "heif" in content_type or "heic" in content_type:
+        return None
     if "png" in content_type:
         return ".png"
     if "webp" in content_type:
@@ -604,6 +606,8 @@ def download_photo(url: str, destination_base: Path, timeout: int) -> Path:
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         ext = photo_extension(response.headers)
+        if ext is None:
+            raise ValueError("HEIF/HEIC images are not supported")
         destination = destination_base.with_suffix(ext)
         destination.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(delete=False, dir=str(destination.parent), suffix=ext) as tmp:
@@ -675,7 +679,7 @@ def import_records(
                         local_path = existing or download_photo(url, destination_base, download_timeout)
                         upsert_photo_metadata(cur, student_pk, url, local_path, True, None)
                         summary["downloaded"] += 1
-                    except (OSError, urllib.error.URLError, TimeoutError) as exc:
+                    except (OSError, urllib.error.URLError, TimeoutError, ValueError) as exc:
                         upsert_photo_metadata(cur, student_pk, url, None, False, str(exc)[:1000])
                         summary["download_failed"] += 1
             conn.commit()

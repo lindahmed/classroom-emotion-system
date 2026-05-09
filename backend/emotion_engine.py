@@ -55,7 +55,7 @@ def analyze_emotion(image_bytes):
         if result:
             dominant = result[0]["dominant_emotion"]
             emotion = EMOTION_MAPPING.get(dominant, "Neutral")
-            confidence = result[0]["emotion"][dominant] / 100.0
+            confidence = float(result[0]["emotion"][dominant]) / 100.0
             engagement_score = ENGAGEMENT_SCORES[emotion]
             focus_score = _compute_focus_score(emotion, confidence)
             return {

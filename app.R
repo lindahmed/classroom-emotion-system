@@ -12,6 +12,8 @@ library(shinyjs)
 library(httr)
 library(jsonlite)
 library(openssl)
+library(promises)
+library(future)
 
 # Load helper functions
 source("R/db_connect.R")
@@ -38,6 +40,9 @@ source("R/csv_backup.R")
 } else {
   FALSE
 }
+
+# Use background R sessions for async operations (prevents UI freeze)
+plan(multisession)
 
 # Initialize app-level data
 app_data <- reactiveValues(
@@ -76,7 +81,7 @@ API_BASE_URL <- "http://localhost:8000"
 call_api <- function(endpoint, method = "GET", body = NULL, token = NULL) {
   url <- paste0(API_BASE_URL, endpoint)
   tryCatch({
-    config <- timeout(3)  # 3 second timeout
+    config <- timeout(15)  # 15 second timeout
     headers <- if (!is.null(token) && nzchar(token)) add_headers(Authorization = paste("Bearer", token)) else NULL
     if (method == "POST") {
       args <- list(url = url, body = body, encode = "json", config = config)
@@ -90,12 +95,13 @@ call_api <- function(endpoint, method = "GET", body = NULL, token = NULL) {
     if (status_code(response) >= 200 && status_code(response) < 300) {
       return(fromJSON(content(response, "text", encoding = "UTF-8")))
     } else {
-      message(paste("API call failed with status:", status_code(response)))
-      return(NULL)
+      body <- tryCatch(content(response, "text", encoding = "UTF-8"), error = function(e) "")
+      message(paste("API call failed:", method, url, "Status:", status_code(response), "Body:", body))
+      return(list(error = TRUE, status = status_code(response), body = body))
     }
   }, error = function(e) {
     message(paste("API call error:", e$message))
-    return(NULL)
+    return(list(error = TRUE, status = 0, body = e$message))
   })
 }
 
@@ -283,24 +289,41 @@ ui <- fluidPage(
       "var cameraInterval = null;\n" ,
       "var currentLectureId = null;\n" ,
       "var eduPulseApiToken = null;\n" ,
+      "var cameraReady = false;\n" ,
       "function startMonitorCamera(message) {\n" ,
       "  var video = document.getElementById('monitor_video');\n" ,
       "  var canvas = document.getElementById('monitor_canvas');\n" ,
       "  var status = document.getElementById('camera_status');\n" ,
-      "  if (!video || !canvas || !status) return;\n" ,
+      "  if (!video || !canvas || !status) {\n" ,
+      "    console.error('Camera elements not found in DOM. Retrying in 500ms...');\n" ,
+      "    setTimeout(function() { startMonitorCamera(message); }, 500);\n" ,
+      "    return;\n" ,
+      "  }\n" ,
       "  if (cameraStream) { stopMonitorCamera(); }\n" ,
       "  currentLectureId = message.lecture_id;\n" ,
       "  status.innerText = 'Requesting camera access...';\n" ,
-      "  navigator.mediaDevices.getUserMedia({ video: true, audio: false })\n" ,
+      "  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {\n" ,
+      "    status.innerText = 'Camera error: getUserMedia not supported (need HTTPS or localhost).';\n" ,
+      "    return;\n" ,
+      "  }\n" ,
+      "  navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false })\n" ,
       "    .then(function(stream) {\n" ,
       "      cameraStream = stream;\n" ,
       "      video.srcObject = stream;\n" ,
-      "      video.play();\n" ,
-      "      status.innerText = 'Camera active. Capturing frames to backend.';\n" ,
-      "      if (!cameraInterval) {\n" ,
-      "        cameraInterval = setInterval(sendCaptureFrame, 2500);\n" ,
-      "        sendCaptureFrame();\n" ,
-      "      }\n" ,
+      "      video.setAttribute('playsinline', '');\n" ,
+      "      video.muted = true;\n" ,
+      "      video.onloadedmetadata = function() {\n" ,
+      "        video.play().then(function() {\n" ,
+      "          cameraReady = true;\n" ,
+      "          status.innerText = 'Camera active. Capturing frames...';\n" ,
+      "          if (!cameraInterval) {\n" ,
+      "            cameraInterval = setInterval(sendCaptureFrame, 3000);\n" ,
+      "            sendCaptureFrame();\n" ,
+      "          }\n" ,
+      "        }).catch(function(playErr) {\n" ,
+      "          status.innerText = 'Video play failed: ' + playErr.message;\n" ,
+      "        });\n" ,
+      "      };\n" ,
       "    })\n" ,
       "    .catch(function(err) {\n" ,
       "      status.innerText = 'Camera unavailable: ' + err.message;\n" ,
@@ -308,14 +331,16 @@ ui <- fluidPage(
       "}\n" ,
       "function stopMonitorCamera() {\n" ,
       "  if (cameraInterval) { clearInterval(cameraInterval); cameraInterval = null; }\n" ,
+      "  cameraReady = false;\n" ,
       "  if (cameraStream) { cameraStream.getTracks().forEach(function(track) { track.stop(); }); cameraStream = null; }\n" ,
-      "  var status = document.getElementById('camera_status');\n      var video = document.getElementById('monitor_video');\n" ,
+      "  var status = document.getElementById('camera_status');\n" ,
+      "  var video = document.getElementById('monitor_video');\n" ,
       "  if (status) status.innerText = 'Camera stopped.';\n" ,
       "  if (video) { video.pause(); video.srcObject = null; }\n" ,
       "  currentLectureId = null;\n" ,
       "}\n" ,
       "function sendCaptureFrame() {\n" ,
-      "  if (!cameraStream || !currentLectureId) return;\n" ,
+      "  if (!cameraStream || !currentLectureId || !cameraReady) return;\n" ,
       "  var video = document.getElementById('monitor_video');\n" ,
       "  var canvas = document.getElementById('monitor_canvas');\n" ,
       "  var status = document.getElementById('camera_status');\n" ,
@@ -344,9 +369,10 @@ ui <- fluidPage(
       "            summary.innerHTML = '<strong>Recognized:</strong> ' + recognized.length + '<br><strong>Present:</strong> ' + (json.present_count || 0) + ' / ' + (json.expected_students || 0);\n" ,
       "          }\n" ,
       "        }\n" ,
+      "        status.innerText = 'Camera active. Last capture: ' + new Date().toLocaleTimeString();\n" ,
       "      })\n" ,
       "      .catch(function(err) {\n" ,
-      "        if (status) status.innerText = 'Capture failed: ' + err.message;\n" ,
+      "        console.error('Frame capture error:', err);\n" ,
       "      });\n" ,
       "  }, 'image/jpeg', 0.7);\n" ,
       "}\n" ,
@@ -1461,43 +1487,46 @@ server <- function(input, output, session) {
     app_data$selected_lecture_id <- input$view_lecture_clicked
     app_data$live_face_response <- NULL
     attendance <- call_api(paste0("/attendance/", input$view_lecture_clicked), token = app_data$api_token)
-    app_data$live_attendance <- if (!is.null(attendance)) attendance$attendance else NULL
+    app_data$live_attendance <- if (!is.null(attendance) && !isTRUE(attendance$error)) attendance$attendance else NULL
     show_panel("monitor")
     showNotification(paste("Viewing:", input$view_lecture_clicked), type="message", duration=2)
   })
   
-  # ── Start session from schedule ────────────────────────────────────────────
+  # ── Start session from schedule (fully async — never blocks the UI) ────────
   observeEvent(input$start_session_clicked, {
     req(input$start_session_clicked)
     lecture_id <- input$start_session_clicked
-    app_data$start_session_request <- lecture_id  # Trigger reactive expression
-  })
-  
-  # ── Handle start session API call ─────────────────────────────────────────
-  observeEvent(app_data$start_session_request, {
-    req(app_data$start_session_request)
-    lecture_id <- app_data$start_session_request
-    app_data$start_session_request <- NULL  # Reset
-    
-    # Show loading message
-    showNotification("Starting session...", type = "message", duration = 2)
-    
-    result <- call_api(
-      paste0("/start-session/", lecture_id),
-      method = "POST",
-      token = app_data$api_token
-    )
-    
-    if (!is.null(result)) {
-      showNotification(paste("Session started for lecture:", lecture_id), type = "success", duration = 3)
-      app_data$selected_lecture_id <- lecture_id
-      app_data$live_face_response <- NULL
-      app_data$live_attendance <- result$attendance
-      show_panel("monitor")
-      session$sendCustomMessage("startCamera", list(lecture_id = lecture_id))
-    } else {
-      showNotification("Failed to start session. Check if FastAPI is running.", type = "error", duration = 5)
-    }
+    api_token  <- app_data$api_token
+
+    app_data$selected_lecture_id <- lecture_id
+    app_data$live_face_response <- NULL
+    show_panel("monitor")
+    showNotification("Starting session...", type = "message", duration = 5)
+
+    future({
+      url <- paste0(API_BASE_URL, "/start-session/", lecture_id)
+      resp <- httr::POST(url,
+        add_headers(Authorization = paste("Bearer", api_token)),
+        httr::timeout(15))
+      if (httr::status_code(resp) >= 200 && httr::status_code(resp) < 300) {
+        list(success = TRUE, data = jsonlite::fromJSON(httr::content(resp, "text", encoding = "UTF-8")))
+      } else {
+        body <- tryCatch(httr::content(resp, "text", encoding = "UTF-8"), error = function(e) "")
+        list(success = FALSE, body = body)
+      }
+    }) %...>% (function(result) {
+      if (isTRUE(result$success)) {
+        showNotification(paste("Session started for lecture:", lecture_id), type = "message", duration = 3)
+        app_data$live_attendance <- result$data$attendance
+        shinyjs::delay(300, {
+          session$sendCustomMessage("startCamera", list(lecture_id = lecture_id))
+        })
+      } else {
+        showNotification(paste("Failed to start session:", result$body), type = "error", duration = 10)
+      }
+    }) %...!% (function(err) {
+      showNotification(paste("Session error:", err$message), type = "error", duration = 10)
+    })
   })
 
   observeEvent(input$stop_attendance_btn, {
@@ -1512,7 +1541,7 @@ server <- function(input, output, session) {
       token = app_data$api_token
     )
     session$sendCustomMessage("stopCamera", list())
-    if (!is.null(result)) {
+    if (!is.null(result) && !isTRUE(result$error)) {
       app_data$live_attendance <- result$attendance
       showNotification(paste("Attendance stopped for lecture:", lid), type = "message", duration = 3)
     } else {

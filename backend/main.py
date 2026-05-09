@@ -44,10 +44,10 @@ logger = logging.getLogger(__name__)
 def _cors_config():
     raw = os.getenv("EDUPULSE_CORS_ORIGINS", "").strip()
     if not raw:
-        # Local dev: allow localhost/127.0.0.1 on any port (Shiny port varies).
-        return {"allow_origins": [], "allow_origin_regex": r"^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$"}
+        # Local dev: allow all origins (Shiny port varies each session).
+        return {"allow_origin_regex": r"https?://.*"}
     origins = [o.strip() for o in raw.split(",") if o.strip()]
-    return {"allow_origins": origins, "allow_origin_regex": None}
+    return {"allow_origins": origins}
 
 
 def _configure_logging():
