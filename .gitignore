@@ -65,7 +65,8 @@ ENV/
 .coverage
 coverage.xml
 
-# Database Files (but not mock data CSVs)
+# Database Files
+data/
 *.db
 *.sqlite
 *.sqlite3

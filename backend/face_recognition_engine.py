@@ -351,6 +351,7 @@ def recognize_faces(
                         "confidence": confidence,
                         "distance": distance,
                         "identity": str(match["identity"]),
+                        "box": None,
                     }
         else:
             total_faces = len(boxes)
@@ -377,6 +378,7 @@ def recognize_faces(
                     "confidence": confidence,
                     "distance": distance,
                     "identity": str(match["identity"]),
+                    "box": (x, y, w, h),
                 }
                 existing = recognized_by_student.get(student_id)
                 if existing is None or confidence > existing["confidence"]:
@@ -390,6 +392,7 @@ def recognize_faces(
             "unknown_count": max(total_faces - matched_face_count, 0),
             "total_faces": total_faces,
             "recognized_any": bool(recognized),
+            "image_bgr": bgr,
         }
 
     except Exception as exc:

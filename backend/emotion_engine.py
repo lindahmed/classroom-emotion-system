@@ -112,6 +112,27 @@ def analyze_emotion(image_bytes: bytes):
     return _analyze_emotion_opencv(image_bytes)
 
 
+def analyze_emotion_crop(face_bgr) -> dict:
+    """Analyze emotion from a pre-cropped face BGR numpy array.
+
+    Falls back to Neutral if encoding or analysis fails.
+    """
+    import cv2
+
+    try:
+        _, buf = cv2.imencode(".jpg", face_bgr)
+        return analyze_emotion(buf.tobytes())
+    except Exception as exc:
+        logger.warning("Per-face emotion analysis failed, falling back to Neutral: %s", exc)
+        return {
+            "emotion": "Neutral",
+            "confidence": 0.5,
+            "engagement_score": ENGAGEMENT_SCORES["Neutral"],
+            "focus_score": 0.5,
+            "engine": "fallback",
+        }
+
+
 def _analyze_emotion_deepface(image_bytes: bytes):
     global _EMOTION_MODEL
     from deepface import DeepFace

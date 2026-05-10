@@ -23,14 +23,15 @@ from .auth import (
 )
 from .database import close_db, get_connection, init_db
 from .face_registry import KNOWN_STUDENTS
-from .storage import append_record, get_lecture_session_start, upsert_lecture_session_start
+from .storage import append_record, append_record_csv, get_lecture_session_start, upsert_lecture_session_start, sync_all_csvs
 
 try:
-    from .face_recognition_engine import recognize_face
-    from .emotion_engine import analyze_emotion
+    from .face_recognition_engine import recognize_faces
+    from .emotion_engine import analyze_emotion, analyze_emotion_crop
 except Exception:
-    recognize_face = None
+    recognize_faces = None
     analyze_emotion = None
+    analyze_emotion_crop = None
 
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,12 @@ async def lifespan(app: FastAPI):
         _configure_logging()
         if os.getenv("SKIP_DB_INIT", "false").lower() not in {"1", "true", "yes"}:
             init_db()
+            # Sync all DB tables to CSV files on startup
+            try:
+                sync_all_csvs()
+                logger.info("CSV files synced from database on startup")
+            except Exception as exc:
+                logger.warning("CSV sync on startup skipped: %s", exc)
         if analyze_emotion is not None:
             try:
                 from .emotion_engine import warmup_emotion_model
@@ -248,7 +255,7 @@ def get_known_students(current_user: Dict = Depends(get_current_user)):
 
 
 def _require_ml_engines():
-    if recognize_face is None or analyze_emotion is None:
+    if recognize_faces is None or analyze_emotion is None:
         raise HTTPException(
             status_code=503,
             detail="Recognition engines are unavailable. Install backend dependencies first.",
@@ -262,7 +269,16 @@ async def recognize_face_endpoint(
 ):
     _require_ml_engines()
     image_bytes = await file.read()
-    return recognize_face(image_bytes)
+    result = recognize_faces(image_bytes)
+    if result.get("recognized"):
+        first = result["recognized"][0]
+        return {
+            "student_id": first["student_id"],
+            "student_name": first["student_name"],
+            "confidence": first["confidence"],
+            "recognized": True,
+        }
+    return {"student_id": "Unknown", "student_name": "", "recognized": False}
 
 
 @app.post("/analyze-attendance-frame", tags=["analytics"])
@@ -272,20 +288,20 @@ async def analyze_frame(
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
     _require_ml_engines()
-    # Ensure we have a session start time for time_minute (survives restarts).
-    # Also primes the in-process tracker timer so subsequent frames compute minutes consistently.
     try:
         if not get_lecture_session_start(lecture_id):
             upsert_lecture_session_start(lecture_id)
         tracker.start_session(lecture_id)
     except Exception:
-        # In tests / CSV-only mode / missing DB schema: proceed without session start.
         pass
+
     image_bytes = await file.read()
-    recognition = recognize_face(image_bytes)
-    if not recognition["recognized"]:
+    recognition = recognize_faces(image_bytes)
+    bgr = recognition.get("image_bgr")
+
+    if not recognition.get("recognized_any"):
         return {
-            "message": "Face not recognized",
+            "message": "No faces recognized",
             "recognized": False,
             "session_active": True,
             "attendance_status": "Absent",
@@ -293,34 +309,56 @@ async def analyze_frame(
             "left_room": False,
         }
 
-    emotion_data = analyze_emotion(image_bytes)
-    tracker.update_attendance(lecture_id, recognition["student_id"])
-    attendance_status = tracker.get_attendance_status(lecture_id, recognition["student_id"])
-    record = {
-        "record_id": str(uuid.uuid4()),
-        "student_id": recognition["student_id"],
-        "student_name": recognition["student_name"],
-        "lecture_id": lecture_id,
-        "timestamp": datetime.now().isoformat(),
-        "emotion": emotion_data["emotion"],
-        "confidence": emotion_data["confidence"],
-        "engagement_score": emotion_data["engagement_score"],
-        "focus_score": emotion_data["focus_score"],
-        "attendance_status": attendance_status,
-        "is_present": attendance_status in ["Present", "Returned"],
-        "left_room": attendance_status == "Left",
-        "absence_duration_minutes": tracker.get_absence_minutes(lecture_id, recognition["student_id"]),
-        "recognized": True,
-    }
+    time_minute = tracker.get_time_minute(lecture_id)
+    now = datetime.now()
+    records = []
 
-    # Persist emotion + attendance to PostgreSQL (core system behavior).
-    # `append_record` will map student_id/lecture_id to student_code/lecture_code as needed.
-    db_record_id = append_record(
-        {
+    for face_info in recognition["recognized"]:
+        student_id = face_info["student_id"]
+        student_name = face_info["student_name"]
+        box = face_info.get("box")
+
+        # Per-face emotion analysis
+        if box is not None and bgr is not None:
+            x, y, w, h = box
+            face_crop = bgr[y : y + h, x : x + w]
+            if face_crop.size > 0:
+                emotion_data = analyze_emotion_crop(face_crop)
+            else:
+                emotion_data = analyze_emotion(image_bytes)
+        else:
+            emotion_data = analyze_emotion(image_bytes)
+
+        tracker.update_attendance(lecture_id, student_id)
+        attendance_status = tracker.get_attendance_status(lecture_id, student_id)
+
+        record = {
+            "record_id": str(uuid.uuid4()),
+            "student_id": student_id,
+            "student_name": student_name,
+            "lecture_id": lecture_id,
+            "timestamp": now.isoformat(),
+            "time": now.strftime("%H:%M"),
+            "time_minute": time_minute,
+            "emotion": emotion_data["emotion"],
+            "confidence": emotion_data["confidence"],
+            "engagement_score": emotion_data["engagement_score"],
+            "focus_score": emotion_data["focus_score"],
+            "attendance_status": attendance_status,
+            "is_present": attendance_status in ["Present", "Returned"],
+            "left_room": attendance_status == "Left",
+            "absence_duration_minutes": tracker.get_absence_minutes(lecture_id, student_id),
+            "recognized": True,
+        }
+
+        model_label = f"EduPulse_v1.0-{emotion_data.get('engine', 'unknown')}"
+
+        # Save to PostgreSQL
+        db_record_id = append_record({
             "student_id": record["student_id"],
             "lecture_id": record["lecture_id"],
-            "recorded_at": datetime.now(),
-            "time_minute": tracker.get_time_minute(lecture_id),
+            "recorded_at": now,
+            "time_minute": time_minute,
             "emotion": record["emotion"],
             "confidence": record["confidence"],
             "engagement_score": record["engagement_score"],
@@ -329,11 +367,36 @@ async def analyze_frame(
             "left_room": record["left_room"],
             "absence_duration_minutes": int(record["absence_duration_minutes"] or 0),
             "source_type": "live_camera",
-            "model_name": f"EduPulse_v1.0-{emotion_data.get('engine', 'unknown')}",
-        }
-    )
-    record["db_record_id"] = db_record_id
-    return record
+            "model_name": model_label,
+        })
+
+        # Save to CSV
+        record["source_type"] = "live_camera"
+        record["model_name"] = model_label
+        append_record_csv(record)
+
+        record["db_record_id"] = db_record_id
+        records.append(record)
+
+    # Backward-compatible response: first student at top level + all records array
+    first_record = records[0] if records else {}
+    return {
+        **first_record,
+        "records": records,
+        "recognized_count": len(records),
+        "total_faces": recognition.get("total_faces", len(records)),
+        "unknown_count": recognition.get("unknown_count", 0),
+    }
+
+
+@app.post("/sync-csvs", tags=["system"])
+def sync_csvs_endpoint(current_user: Dict = Depends(require_roles("admin"))):
+    """Manually trigger a full DB→CSV sync for all tables."""
+    try:
+        sync_all_csvs()
+        return {"message": "All CSV files synced from database", "status": "ok"}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.post("/start-session/{lecture_id}", tags=["sessions"])
