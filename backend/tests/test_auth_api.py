@@ -143,8 +143,8 @@ def test_protected_dependency_requires_auth():
 
 
 def test_start_session_endpoint_uses_attendance_service(monkeypatch):
-    def fake_start_attendance_session(lecture_id, started_by_user_id):
-        return {"status": "started", "lecture_code": lecture_id, "started_by": started_by_user_id}
+    def fake_start_attendance_session(lecture_id, started_by_user_id, session_mode="full"):
+        return {"status": "started", "lecture_code": lecture_id, "started_by": started_by_user_id, "session_mode": session_mode}
 
     monkeypatch.setattr(main, "start_attendance_session", fake_start_attendance_session)
 

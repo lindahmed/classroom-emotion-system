@@ -368,9 +368,6 @@ normalize_institution_id <- function(institution_id) {
 validate_institution_id <- function(role, institution_id) {
   if (!nzchar(institution_id)) return("Please enter your institution ID")
   expected_prefix <- switch(role, student = "S", lecturer = "L", admin = "A")
-  if (identical(role, "student") && grepl("^[0-9]+$", institution_id)) {
-    return(NULL)
-  }
   if (!startsWith(institution_id, expected_prefix)) {
     return(paste0(capitalize_role(role), " institution ID must start with ", expected_prefix))
   }

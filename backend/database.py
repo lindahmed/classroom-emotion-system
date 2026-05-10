@@ -185,28 +185,9 @@ def ensure_auth_schema():
             else:
                 logger.info("All required tables exist")
 
-            # Apply additive runtime migrations for existing local databases.
+            # Ensure institution_id column exists
             try:
-                cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
                 cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS institution_id VARCHAR(20)")
-                cur.execute(
-                    """
-                    SELECT character_maximum_length
-                    FROM information_schema.columns
-                    WHERE table_schema = 'public'
-                      AND table_name = 'students'
-                      AND column_name = 'student_code'
-                    """
-                )
-                row = cur.fetchone()
-                if row and row[0] and int(row[0]) < 20:
-                    cur.execute("SAVEPOINT widen_student_code")
-                    try:
-                        cur.execute("ALTER TABLE students ALTER COLUMN student_code TYPE VARCHAR(20)")
-                    except Exception:
-                        cur.execute("ROLLBACK TO SAVEPOINT widen_student_code")
-                    finally:
-                        cur.execute("RELEASE SAVEPOINT widen_student_code")
                 cur.execute(
                     """
                     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_institution_id_unique
@@ -214,53 +195,8 @@ def ensure_auth_schema():
                     WHERE institution_id IS NOT NULL
                     """
                 )
-                cur.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS student_face_photos (
-                        photo_id BIGSERIAL PRIMARY KEY,
-                        student_id INTEGER NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
-                        source_url TEXT NOT NULL,
-                        source_file_id VARCHAR(128),
-                        local_path VARCHAR(500),
-                        is_downloaded BOOLEAN NOT NULL DEFAULT FALSE,
-                        download_error TEXT,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        UNIQUE (student_id, source_url)
-                    )
-                    """
-                )
-                cur.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS attendance_sessions (
-                        session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                        lecture_id INTEGER NOT NULL UNIQUE REFERENCES lectures(lecture_id) ON DELETE CASCADE,
-                        started_by INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
-                        started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                        ended_at TIMESTAMP WITH TIME ZONE,
-                        status VARCHAR(20) NOT NULL DEFAULT 'active',
-                        session_mode VARCHAR(20) NOT NULL DEFAULT 'full',
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        CONSTRAINT chk_attendance_session_status CHECK (status IN ('active', 'completed', 'cancelled')),
-                        CONSTRAINT chk_attendance_session_times CHECK (ended_at IS NULL OR ended_at >= started_at)
-                    )
-                    """
-                )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_student_face_photos_student ON student_face_photos(student_id)"
-                )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_student_face_photos_file_id ON student_face_photos(source_file_id)"
-                )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_attendance_sessions_lecture ON attendance_sessions(lecture_id)"
-                )
-                cur.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_attendance_sessions_status ON attendance_sessions(status)"
-                )
             except Exception as e:
-                logger.warning("Could not apply runtime schema updates: %s", e)
+                logger.warning("Could not add institution_id column: %s", e)
 
             # Session start persistence (for time_minute across restarts)
             # Safe to create even if the full analytics schema is not present.

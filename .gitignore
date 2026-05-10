@@ -20,6 +20,9 @@ packrat/
 shinyapps/
 *.dcf
 
+# Local PostgreSQL dumps (optional; place under database/backups/ when restoring)
+database/backups/*.dump
+
 # Environment Variables
 .env
 .env.local

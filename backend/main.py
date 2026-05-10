@@ -3,18 +3,14 @@ from contextlib import asynccontextmanager
 import os
 import logging
 from typing import Dict, List, Literal, Optional
+import uuid
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
-from .attendance_service import (
-    AttendanceServiceError,
-    get_attendance,
-    mark_student_present,
-    start_attendance_session,
-    stop_attendance_session,
-)
+from .attendance_service import AttendanceServiceError, get_attendance
+from .attendance_tracker import tracker
 from .auth import (
     authenticate,
     change_password_authenticated,
@@ -26,15 +22,14 @@ from .auth import (
     verify_and_change_password,
 )
 from .database import close_db, get_connection, init_db
-from .face_registry import refresh_known_students
-from .storage import upsert_lecture_session_start
+from .face_registry import KNOWN_STUDENTS
+from .storage import append_record, get_lecture_session_start, upsert_lecture_session_start
 
 try:
-    from .face_recognition_engine import recognize_face, recognize_faces
+    from .face_recognition_engine import recognize_face
     from .emotion_engine import analyze_emotion
 except Exception:
     recognize_face = None
-    recognize_faces = None
     analyze_emotion = None
 
 
@@ -44,10 +39,14 @@ logger = logging.getLogger(__name__)
 def _cors_config():
     raw = os.getenv("EDUPULSE_CORS_ORIGINS", "").strip()
     if not raw:
-        # Local dev: allow all origins (Shiny port varies each session).
-        return {"allow_origin_regex": r"https?://.*"}
+        # Local dev: allow localhost/127.0.0.1 on any port (Shiny port varies).
+        # Use allow_origins=["*"] for development to avoid preflight issues
+        return {
+            "allow_origins": ["http://localhost:3909", "http://127.0.0.1:3909", "http://localhost:3838", "http://127.0.0.1:3838"],
+            "allow_origin_regex": r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+        }
     origins = [o.strip() for o in raw.split(",") if o.strip()]
-    return {"allow_origins": origins}
+    return {"allow_origins": origins, "allow_origin_regex": None}
 
 
 def _configure_logging():
@@ -89,10 +88,10 @@ class UserPublic(BaseModel):
     id: int
     email: str
     role: str
-    institution_id: Optional[str] = None
+    institution_id: str
     is_active: bool
     name: str
-    user_code: Optional[str] = None
+    user_code: str
 
 
 class AuthResponse(BaseModel):
@@ -239,28 +238,15 @@ def me(current_user: Dict = Depends(get_current_user)):
 
 @app.get("/known-students", response_model=KnownStudentsResponse, tags=["faces"])
 def get_known_students(current_user: Dict = Depends(get_current_user)):
-    students = refresh_known_students()
-    return {"students": students, "count": len(students)}
+    return {"students": KNOWN_STUDENTS, "count": len(KNOWN_STUDENTS)}
 
 
 def _require_ml_engines():
-    if recognize_face is None or recognize_faces is None or analyze_emotion is None:
+    if recognize_face is None or analyze_emotion is None:
         raise HTTPException(
             status_code=503,
             detail="Recognition engines are unavailable. Install backend dependencies first.",
         )
-
-
-def _require_face_engine():
-    if recognize_faces is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Face recognition engine is unavailable. Install backend dependencies first.",
-        )
-
-
-def _attendance_error(exc: AttendanceServiceError):
-    raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
 
 @app.post("/recognize-face", tags=["faces"])
@@ -270,89 +256,88 @@ async def recognize_face_endpoint(
 ):
     _require_ml_engines()
     image_bytes = await file.read()
-    try:
-        return recognize_face(image_bytes)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return recognize_face(image_bytes)
 
 
 @app.post("/analyze-attendance-frame", tags=["analytics"])
 async def analyze_frame(
     file: UploadFile = File(...),
     lecture_id: str = Form(...),
-    mode: str = Form("full"),
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
-    _require_face_engine()
-    if mode == "full":
-        _require_ml_engines()
+    _require_ml_engines()
+    # Ensure we have a session start time for time_minute (survives restarts).
+    # Also primes the in-process tracker timer so subsequent frames compute minutes consistently.
+    try:
+        if not get_lecture_session_start(lecture_id):
+            upsert_lecture_session_start(lecture_id)
+        tracker.start_session(lecture_id)
+    except Exception:
+        # In tests / CSV-only mode / missing DB schema: proceed without session start.
+        pass
     image_bytes = await file.read()
-    try:
-        recognition = recognize_faces(image_bytes)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    recognition = recognize_face(image_bytes)
+    if not recognition["recognized"]:
+        return {
+            "message": "Face not recognized",
+            "recognized": False,
+            "session_active": True,
+            "attendance_status": "Absent",
+            "is_present": False,
+            "left_room": False,
+        }
 
-    emotion_data = None
-    if mode == "full":
-        try:
-            emotion_data = analyze_emotion(image_bytes)
-        except RuntimeError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-    persisted = []
-    skipped = []
-    for match in recognition.get("recognized", []):
-        try:
-            record = mark_student_present(lecture_id, match["student_id"], emotion_data)
-        except AttendanceServiceError as exc:
-            _attendance_error(exc)
-        if record is None:
-            skipped.append(
-                {
-                    "student_id": match["student_id"],
-                    "student_name": match.get("student_name", ""),
-                    "reason": "recognized student is not enrolled in this lecture group",
-                }
-            )
-            continue
-        record["face_confidence"] = match.get("confidence")
-        record["face_distance"] = match.get("distance")
-        persisted.append(record)
-
-    try:
-        attendance = get_attendance(lecture_id)
-    except AttendanceServiceError as exc:
-        _attendance_error(exc)
-
-    return {
-        "recognized": persisted,
-        "skipped": skipped,
-        "recognized_count": len(persisted),
-        "recognized_any": bool(persisted),
-        "unknown_count": recognition.get("unknown_count", 0),
-        "total_faces": recognition.get("total_faces", 0),
+    emotion_data = analyze_emotion(image_bytes)
+    tracker.update_attendance(lecture_id, recognition["student_id"])
+    attendance_status = tracker.get_attendance_status(lecture_id, recognition["student_id"])
+    record = {
+        "record_id": str(uuid.uuid4()),
+        "student_id": recognition["student_id"],
+        "student_name": recognition["student_name"],
         "lecture_id": lecture_id,
         "timestamp": datetime.now().isoformat(),
-        "emotion": emotion_data,
-        "attendance": attendance["attendance"],
-        "present_count": attendance["present_count"],
-        "absent_count": attendance["absent_count"],
-        "expected_students": attendance["expected_students"],
-        "session_status": attendance["session_status"],
-        "mode": mode,
+        "emotion": emotion_data["emotion"],
+        "confidence": emotion_data["confidence"],
+        "engagement_score": emotion_data["engagement_score"],
+        "focus_score": emotion_data["focus_score"],
+        "attendance_status": attendance_status,
+        "is_present": attendance_status in ["Present", "Returned"],
+        "left_room": attendance_status == "Left",
+        "absence_duration_minutes": tracker.get_absence_minutes(lecture_id, recognition["student_id"]),
+        "recognized": True,
     }
+
+    # Persist emotion + attendance to PostgreSQL (core system behavior).
+    # `append_record` will map student_id/lecture_id to student_code/lecture_code as needed.
+    db_record_id = append_record(
+        {
+            "student_id": record["student_id"],
+            "lecture_id": record["lecture_id"],
+            "recorded_at": datetime.now(),
+            "time_minute": tracker.get_time_minute(lecture_id),
+            "emotion": record["emotion"],
+            "confidence": record["confidence"],
+            "engagement_score": record["engagement_score"],
+            "focus_score": record["focus_score"],
+            "is_present": record["is_present"],
+            "left_room": record["left_room"],
+            "absence_duration_minutes": int(record["absence_duration_minutes"] or 0),
+            "source_type": "live_camera",
+            "model_name": "EduPulse_v1.0",
+        }
+    )
+    record["db_record_id"] = db_record_id
+    return record
 
 
 @app.post("/start-session/{lecture_id}", tags=["sessions"])
 def start_session(
     lecture_id: str,
-    mode: str = Form("full"),
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
-    try:
-        upsert_lecture_session_start(lecture_id)
-        return start_attendance_session(lecture_id, current_user.get("id"), session_mode=mode)
-    except AttendanceServiceError as exc:
-        _attendance_error(exc)
+    upsert_lecture_session_start(lecture_id)
+    tracker.start_session(lecture_id)
+    return {"message": f"Session started for lecture {lecture_id}", "status": "started"}
 
 
 @app.post("/stop-session/{lecture_id}", tags=["sessions"])
@@ -360,21 +345,12 @@ def stop_session(
     lecture_id: str,
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
+    # Stop local session timer/caches; DB end tracking can be added later if needed.
     try:
-        return stop_attendance_session(lecture_id)
-    except AttendanceServiceError as exc:
-        _attendance_error(exc)
-
-
-@app.get("/attendance/{lecture_id}", tags=["sessions"])
-def attendance_status(
-    lecture_id: str,
-    current_user: Dict = Depends(require_roles("admin", "lecturer")),
-):
-    try:
-        return get_attendance(lecture_id)
-    except AttendanceServiceError as exc:
-        _attendance_error(exc)
+        tracker.stop_session(lecture_id)
+    except Exception:
+        pass
+    return {"message": f"Session stopped for lecture {lecture_id}", "status": "stopped"}
 
 
 @app.get("/session-status/{lecture_id}", tags=["sessions"])
@@ -382,7 +358,16 @@ def get_session_status(
     lecture_id: str,
     current_user: Dict = Depends(require_roles("admin", "lecturer")),
 ):
+    return tracker.get_session_status(lecture_id)
+
+
+@app.get("/attendance/{lecture_id}", tags=["sessions"])
+def attendance_snapshot(
+    lecture_id: str,
+    current_user: Dict = Depends(require_roles("admin", "lecturer")),
+):
+    """R Shiny live monitor calls this to refresh roster counts (group + attendance_records)."""
     try:
         return get_attendance(lecture_id)
     except AttendanceServiceError as exc:
-        _attendance_error(exc)
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc

@@ -10,11 +10,69 @@ from typing import Any
 
 from .database import get_connection
 
+_ALLOWED_EMOTIONS = frozenset({"Happy", "Neutral", "Confused", "Bored"})
+
 
 class AttendanceServiceError(RuntimeError):
     def __init__(self, message: str, status_code: int = 400):
         super().__init__(message)
         self.status_code = status_code
+
+
+def _normalize_emotion_row(emotion_data: dict[str, Any]) -> dict[str, Any]:
+    """Map detector output to PostgreSQL emotion_type enum values."""
+    out = dict(emotion_data)
+    raw = str(out.get("emotion", "Neutral")).strip()
+    if raw not in _ALLOWED_EMOTIONS:
+        out["emotion"] = "Neutral"
+    else:
+        out["emotion"] = raw
+
+    def _clamp01(key: str, default: float) -> float:
+        try:
+            v = float(out.get(key, default))
+        except (TypeError, ValueError):
+            v = default
+        return max(0.0, min(1.0, v))
+
+    out["confidence"] = _clamp01("confidence", 0.5)
+    out["engagement_score"] = _clamp01("engagement_score", 0.65)
+    out["focus_score"] = _clamp01("focus_score", 0.5)
+    return out
+
+
+def _model_label(emotion_data: dict[str, Any]) -> str:
+    engine = emotion_data.get("engine") or "unknown"
+    label = f"EduPulse_{engine}"
+    return label[:50]
+
+
+def _session_elapsed_minutes(cur, lecture_id: int, at: datetime) -> int:
+    """Minutes since live attendance session start (fallback: lecture_sessions)."""
+    cur.execute(
+        """
+        SELECT started_at FROM attendance_sessions
+        WHERE lecture_id = %s AND status = 'active'
+        LIMIT 1
+        """,
+        (lecture_id,),
+    )
+    row = cur.fetchone()
+    anchor = row[0] if row else None
+    if anchor is None:
+        cur.execute(
+            "SELECT started_at FROM lecture_sessions WHERE lecture_id = %s LIMIT 1",
+            (lecture_id,),
+        )
+        row2 = cur.fetchone()
+        anchor = row2[0] if row2 else None
+    if anchor is None:
+        return 0
+    if anchor.tzinfo is None:
+        anchor = anchor.replace(tzinfo=timezone.utc)
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    return max(0, int((at - anchor).total_seconds() // 60))
 
 
 def _json_value(value: Any) -> Any:
@@ -252,7 +310,10 @@ def mark_student_present(
                 (student_pk, context["lecture_id"], seen_at, seen_at),
             )
             record_id = None
+            norm_out: dict[str, Any] | None = None
             if emotion_data is not None:
+                norm_out = _normalize_emotion_row(emotion_data)
+                time_minute = _session_elapsed_minutes(cur, context["lecture_id"], seen_at)
                 cur.execute(
                     """
                     INSERT INTO emotion_records (
@@ -260,18 +321,20 @@ def mark_student_present(
                         confidence, engagement_score, focus_score, is_present,
                         left_room, absence_duration_minutes, source, model_name
                     )
-                    VALUES (%s, %s, %s, 0, %s, %s, %s, %s, TRUE, FALSE, 0,
-                            'live_camera', 'EduPulse_v1.0')
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE, FALSE, 0,
+                            'live_camera', %s)
                     RETURNING record_id
                     """,
                     (
                         student_pk,
                         context["lecture_id"],
                         seen_at,
-                        emotion_data.get("emotion", "Neutral"),
-                        float(emotion_data.get("confidence", 0.5)),
-                        float(emotion_data.get("engagement_score", 0.65)),
-                        float(emotion_data.get("focus_score", 0.5)),
+                        time_minute,
+                        norm_out["emotion"],
+                        float(norm_out["confidence"]),
+                        float(norm_out["engagement_score"]),
+                        float(norm_out["focus_score"]),
+                        _model_label(norm_out),
                     ),
                 )
                 record_id = int(cur.fetchone()[0])
@@ -281,10 +344,10 @@ def mark_student_present(
                 "student_name": student_name,
                 "lecture_id": lecture_code,
                 "timestamp": seen_at.isoformat(),
-                "emotion": emotion_data.get("emotion", "Neutral") if emotion_data else None,
-                "confidence": float(emotion_data.get("confidence", 0.5)) if emotion_data else None,
-                "engagement_score": float(emotion_data.get("engagement_score", 0.65)) if emotion_data else None,
-                "focus_score": float(emotion_data.get("focus_score", 0.5)) if emotion_data else None,
+                "emotion": norm_out["emotion"] if norm_out else None,
+                "confidence": float(norm_out["confidence"]) if norm_out else None,
+                "engagement_score": float(norm_out["engagement_score"]) if norm_out else None,
+                "focus_score": float(norm_out["focus_score"]) if norm_out else None,
                 "attendance_status": "Present",
                 "is_present": True,
                 "left_room": False,

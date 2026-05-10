@@ -112,8 +112,6 @@ def _validate_signup_input(email: str, password: str, role: str, institution_id:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Institution ID is required",
         )
-    if role == "student" and institution_id.isdigit():
-        return
     if not institution_id.startswith(expected_prefix):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -165,10 +163,10 @@ def _query_user_public(user_id: int) -> Dict[str, Any]:
                 "id": row[0],
                 "email": row[1],
                 "role": row[2],
-                "institution_id": row[3] or "",
+                "institution_id": row[3],
                 "is_active": row[4],
-                "name": row[5] or "",
-                "user_code": row[6] or "",
+                "name": row[5],
+                "user_code": row[6],
             }
 
 

@@ -285,17 +285,34 @@ calculate_lecture_summary <- function(emotion_data, lecture_id) {
 
   # Get most common emotion
   emotion_counts <- table(lecture_data$emotion)
-  dominant_emotion <- names(emotion_counts)[which.max(emotion_counts)]
+  dominant_emotion <- if(length(emotion_counts) > 0) names(emotion_counts)[which.max(emotion_counts)] else "Unknown"
+  
+  # Safely calculate numeric metrics with proper type conversion and NA handling
+  safe_mean <- function(x) {
+    x_numeric <- suppressWarnings(as.numeric(x))
+    val <- mean(x_numeric, na.rm = TRUE)
+    if(is.nan(val) || is.na(val) || !is.finite(val)) return(0)
+    return(val)
+  }
+  
+  safe_round <- function(x, digits = 3) {
+    x_numeric <- suppressWarnings(as.numeric(x))
+    if(is.nan(x_numeric) || is.na(x_numeric) || !is.finite(x_numeric)) return(0)
+    return(round(x_numeric, digits))
+  }
+  
+  # Calculate present students count
+  present_count <- sum(lecture_data$is_present == TRUE | lecture_data$is_present == 1, na.rm = TRUE)
 
   list(
     total_students = n_distinct(lecture_data$student_id),
-    present_students = sum(lecture_data$is_present) / n_distinct(lecture_data$student_id),
-    absent_students = n_distinct(lecture_data[!lecture_data$is_present, ]$student_id),
-    avg_engagement = round(mean(lecture_data$engagement_score, na.rm = TRUE), 3),
-    avg_focus = round(mean(lecture_data$focus_score, na.rm = TRUE), 3),
-    avg_confidence = round(mean(lecture_data$confidence, na.rm = TRUE), 3),
+    present_students = present_count,
+    absent_students = n_distinct(lecture_data$student_id) - present_count,
+    avg_engagement = safe_round(safe_mean(lecture_data$engagement_score), 3),
+    avg_focus = safe_round(safe_mean(lecture_data$focus_score), 3),
+    avg_confidence = safe_round(safe_mean(lecture_data$confidence), 3),
     dominant_emotion = dominant_emotion,
-    confusion_rate = round(sum(lecture_data$emotion == "Confused") / nrow(lecture_data), 3),
-    boredom_rate = round(sum(lecture_data$emotion == "Bored") / nrow(lecture_data), 3)
+    confusion_rate = safe_round(sum(lecture_data$emotion == "Confused", na.rm = TRUE) / nrow(lecture_data), 3),
+    boredom_rate = safe_round(sum(lecture_data$emotion == "Bored", na.rm = TRUE) / nrow(lecture_data), 3)
   )
 }

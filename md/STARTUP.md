@@ -110,6 +110,28 @@ CREATE DATABASE edupulse_ai OWNER admin;
 
 If you want CSV-only mode, set `EDUPULSE_USE_DB=false`.
 
+### Restore from a backup (`pg_dump` custom `.dump` file)
+
+Shipped backups from Linux often list `dbname: edupulse` inside the archive; your Windows database name can still be **`EduPulse AI`** or **`edupulse_ai`** as long as you restore **into** that existing database and match `EDUPULSE_DB_NAME` in `.env`.
+
+1. Copy the `.dump` file to `database/backups/` (ignored by git).
+2. Set `PGPASSWORD`, then run PowerShell from the repo root:
+
+```powershell
+$env:PGPASSWORD = 'your_db_password'
+.\database\restore_edupulse_backup.ps1 -DumpPath ".\database\backups\your_file.dump" -DbName "EduPulse AI"
+```
+
+Creating a **new** database (e.g. `edupulse`) requires a superuser role (`postgres`). Restoring into an **existing** database only needs an owner account (e.g. `admin`).
+
+You may see non-fatal `pg_restore` errors on foreign-key constraints if the archive contained orphaned rows; verify important tables with:
+
+```sql
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM emotion_records;
+SELECT COUNT(*) FROM students;
+```
+
 ## Start On Linux
 
 Terminal 1, backend:

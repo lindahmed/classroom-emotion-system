@@ -15,6 +15,11 @@ library(openssl)
 library(promises)
 library(future)
 
+# Optional project `.env` (KEY=value, no `export`) — DATABASE_URL / EDUPULSE_* for R before helpers load.
+if (file.exists(".env")) {
+  suppressWarnings(tryCatch(readRenviron(".env"), error = function(e) invisible(NULL)))
+}
+
 # Load helper functions
 source("R/db_connect.R")
 source("R/db_auth.R")
@@ -23,6 +28,7 @@ source("R/data_helpers.R")
 source("R/analytics_helpers.R")
 source("R/ui_helpers.R")
 source("R/csv_backup.R")
+source("R/analysis_semester_data.R")
 
 # Initialize database pool on app start
 # (conditional — falls back to CSV if DB unavailable)
@@ -57,7 +63,7 @@ app_data <- reactiveValues(
   user_email = NULL,
   db_user_id = NULL,
   api_token = NULL,
-  selected_week = 1,
+  selected_week = 13,
   selected_lecture_id = NULL,
   start_session_request = NULL,
   live_face_response = NULL,
@@ -75,14 +81,96 @@ authenticate_user <- function(email, password) {
   }, error = function(e) NULL)
 }
 
-# API configuration
-API_BASE_URL <- "http://localhost:8000"
+# API configuration (mirror browser camera JS via EDUPULSE_API_BASE_URL — no trailing slash)
+API_BASE_URL <- sub("/+$", "", trimws(Sys.getenv("EDUPULSE_API_BASE_URL", "http://localhost:8000")))
+
+# Turn attendance JSON payloads into one stable roster data.frame & trim quirks that break summaries.
+normalize_live_attendance <- function(att) {
+  if (is.null(att)) return(NULL)
+  if (inherits(att, "tbl_df")) att <- as.data.frame(att, stringsAsFactors = FALSE)
+  if (!inherits(att, "data.frame") && inherits(att, "list")) {
+    merged <- NULL
+    if (length(att) >= 1L && is.list(att[[1L]])) {
+      merged <- tryCatch(dplyr::bind_rows(lapply(att, function(r) as.data.frame(r, stringsAsFactors = FALSE))),
+                         error = function(e) NULL)
+    }
+    if (!is.null(merged)) att <- as.data.frame(merged, stringsAsFactors = FALSE)
+    else att <- tryCatch(as.data.frame(att, stringsAsFactors = FALSE), error = function(e) NULL)
+  }
+  if (!is.data.frame(att) || nrow(att) == 0) return(att)
+  if ("status" %in% names(att)) {
+    ch <- ifelse(is.na(att$status), "", trimws(as.character(att$status)))
+    ch <- ifelse(nzchar(ch), ch, "Absent")
+    att$status <- ch
+  }
+  att
+}
+
+# Robust present tally (PostgreSQL/driver/jsonlite sometimes mixes casing/spaces.)
+attendance_present_count <- function(att) {
+  if (is.null(att) || !is.data.frame(att) || nrow(att) == 0) return(0L)
+  if (!("status" %in% names(att))) return(0L)
+  s <- tolower(trimws(as.character(att$status)))
+  as.integer(sum(!is.na(s) & s %in% c("present", "returned"), na.rm = TRUE))
+}
+
+# FastAPI `/analyze-attendance-frame` uses scalar `recognized` (TRUE/FALSE) + flat fields;
+# legacy payloads used `recognized` as a dataframe / list — normalize for observers + summary UI.
+edu_normalize_live_frame_payload <- function(parsed) {
+  if (is.null(parsed) || !is.list(parsed)) return(parsed)
+
+  blank_df <- data.frame(
+    student_id = character(),
+    student_name = character(),
+    emotion = character(),
+    face_confidence = numeric(),
+    stringsAsFactors = FALSE
+  )
+
+  rid <- parsed$recognized
+  if (is.null(rid)) {
+    parsed$recognized <- blank_df
+    return(parsed)
+  }
+
+  if (is.data.frame(rid) && nrow(rid) > 0L) return(parsed)
+
+  if (is.list(rid) && length(rid) >= 1L && all(vapply(rid, is.list, FUN.VALUE = logical(1)))) {
+    parsed$recognized <- dplyr::bind_rows(lapply(rid, function(x) as.data.frame(x, stringsAsFactors = FALSE)))
+    return(parsed)
+  }
+
+  if (is.logical(rid) && length(rid) == 1L) {
+    if (isTRUE(rid)) {
+      sid <- trimws(paste(as.character(parsed$student_id %||% ""), collapse = ""))
+      if (!nzchar(sid)) {
+        parsed$recognized <- blank_df
+      } else {
+        fc <- suppressWarnings(as.numeric(parsed$confidence %||% NA))
+        if (length(fc) != 1L || is.na(fc)) fc <- NA_real_
+        parsed$recognized <- data.frame(
+          student_id = sid,
+          student_name = trimws(paste(as.character(parsed$student_name %||% ""), collapse = "")),
+          emotion = trimws(paste(as.character(parsed$emotion %||% "Neutral"), collapse = "")),
+          face_confidence = fc,
+          stringsAsFactors = FALSE
+        )
+      }
+    } else {
+      parsed$recognized <- blank_df
+    }
+    return(parsed)
+  }
+
+  if (inherits(rid, "data.frame")) parsed$recognized <- rid else parsed$recognized <- blank_df
+  parsed
+}
 
 # Function to call FastAPI with timeout
-call_api <- function(endpoint, method = "GET", body = NULL, token = NULL) {
+call_api <- function(endpoint, method = "GET", body = NULL, token = NULL, timeout_sec = 45) {
   url <- paste0(API_BASE_URL, endpoint)
   tryCatch({
-    config <- timeout(15)  # 15 second timeout
+    config <- timeout(ceiling(timeout_sec))
     headers <- if (!is.null(token) && nzchar(token)) add_headers(Authorization = paste("Bearer", token)) else NULL
     if (method == "POST") {
       args <- list(url = url, body = body, encode = "json", config = config)
@@ -106,6 +194,50 @@ call_api <- function(endpoint, method = "GET", body = NULL, token = NULL) {
   })
 }
 
+# ── Sidebar / shell helpers (same nav targets as legacy nav_* inputs) ────────
+ep_sb_nav_button <- function(inputId, label, material_icon = "") {
+  lab <- if (nzchar(material_icon)) {
+    tagList(tags$span(class = "material-symbols-outlined ep-sb-ms", material_icon), "\u00a0", label)
+  } else {
+    label
+  }
+  tagAppendAttributes(
+    actionButton(inputId, label = lab, class = "btn ep-sb-link action-button"),
+    `data-panel` = sub("^sb_", "", inputId)
+  )
+}
+
+# Week chips: grey + disabled once semester week is locked (see analysis_semester_data.R).
+ep_week_nav_button <- function(week_num, id_prefix = "week_btn_") {
+  wid <- paste0(id_prefix, week_num)
+  if (week_num >= EDUPULSE_FIRST_LOCKED_WEEK) {
+    tags$button(
+      paste0("W", week_num),
+      id = wid,
+      type = "button",
+      class = if (nzchar(id_prefix) && id_prefix != "week_btn_") {
+        "ep-week-chip week-btn ep-week-locked"
+      } else {
+        "week-btn ep-week-locked"
+      },
+      disabled = NA
+    )
+  } else {
+    tags$button(
+      paste0("W", week_num),
+      id = wid,
+      class = if (nzchar(id_prefix) && id_prefix != "week_btn_") {
+        "ep-week-chip week-btn"
+      } else {
+        "week-btn"
+      },
+      onclick = sprintf(
+        "Shiny.setInputValue('selected_week_click', %d, {priority: 'event'});", week_num
+      )
+    )
+  }
+}
+
 # ── UI ──────────────────────────────────────────────────────────────────────
 ui <- fluidPage(
   useShinyjs(),
@@ -115,16 +247,16 @@ ui <- fluidPage(
       /* ── EduPulse AI – Theme Variables ─────────────────────────────────── */
       /* Dark Mode (default) – navy/slate + sky-blue accent */
       :root {
-        --bg: #0b1220;
-        --surface: #111a2d;
-        --surface-alt: #0f172a;
+        --bg: #12141d;
+        --surface: #1c1f2a;
+        --surface-alt: #161a24;
         --text: #f1f5f9;
         --muted: #94a3b8;
-        --accent: #81aad9;
-        --accent-strong: #6b96c7;
-        --border: #24344c;
-        --border-strong: #81aad9;
-        --panel-text: #81aad9;
+        --accent: #a5d8ff;
+        --accent-strong: #7ec8f5;
+        --border: #2a3142;
+        --border-strong: #a5d8ff;
+        --panel-text: #a5d8ff;
         --alert-info-bg: rgba(129,170,217,0.12);
         --alert-info-border: #81aad9;
         --alert-info-text: #a8c4e0;
@@ -140,7 +272,7 @@ ui <- fluidPage(
         --dataTables-input-bg: #111a2d;
         --dataTables-input-border: #334766;
         --dataTables-input-text: #f1f5f9;
-        --navbar-bg: #0b1220;
+        --navbar-bg: #12141d;
         --navbar-link: #94a3b8;
         --navbar-link-hover: #81aad9;
         --login-bg: #111a2d;
@@ -193,13 +325,20 @@ ui <- fluidPage(
       }
       body { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; margin:0; font-size:17px; }
       .ep-navbar { background-color: var(--navbar-bg); border-bottom: 1px solid var(--border);
-                   padding: 1rem 2rem; display: flex; align-items: center; gap: 0.5rem;
-                   box-shadow: var(--shadow-card); flex-wrap: wrap; min-height: 76px; }
-      .ep-brand  { color: var(--accent); font-weight: 800; font-size: 1.75rem; margin-right: auto; }
+                   padding: 1rem 2rem; display: flex; align-items: center; gap: 0.75rem;
+                   box-shadow: var(--shadow-card); flex-wrap: wrap; row-gap: 0.5rem; min-height: 76px; }
+      .ep-brand { color: var(--accent); font-weight: 800; font-size: 1.75rem; margin-right: 0.5rem;
+                  flex-shrink: 0; }
+      .ep-nav-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+                      flex: 1 1 auto; min-width: min(520px, 100%); row-gap: 0.35rem; }
+      .ep-nav-tail { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center;
+                     gap: 0.35rem; flex-shrink: 0; }
       .ep-nav-link { color: var(--navbar-link); background: none; border: none; cursor: pointer;
                      font-size: 1.15rem; padding: 8px 16px; border-radius: 10px; font-weight: 600;
                      transition: color 0.22s ease-out, background 0.22s ease-out; }
       .ep-nav-link:hover { color: var(--navbar-link-hover); background: rgba(129,170,217,0.08); }
+      .ep-navbar .ep-nav-link.ep-top-active { color: var(--accent-strong) !important; font-weight: 700;
+        background: rgba(129,170,217,0.16) !important; border: 1px solid rgba(129,170,217,0.38) !important; }
       .sidebar { background-color: var(--surface); border-right: 1px solid var(--border);
                  min-height: calc(100vh - 56px); padding: 1.25rem; width: 220px; flex-shrink: 0; }
       .main-panel { background-color: var(--bg); padding: 1.5rem; flex-grow: 1; overflow-y: auto; }
@@ -286,7 +425,10 @@ ui <- fluidPage(
       }
     ")),
     tags$script(HTML(
-      "var cameraStream = null;\n" ,
+      paste0(
+        "var eduPulseApiBase = ", jsonlite::toJSON(API_BASE_URL, auto_unbox = TRUE), ";\n",
+        "var cameraStream = null;\n"
+      ) ,
       "var cameraInterval = null;\n" ,
       "var currentLectureId = null;\n" ,
       "var currentSessionMode = 'full';\n" ,
@@ -338,7 +480,7 @@ ui <- fluidPage(
       "  if (cameraStream) { cameraStream.getTracks().forEach(function(track) { track.stop(); }); cameraStream = null; }\n" ,
       "  var status = document.getElementById('camera_status');\n" ,
       "  var video = document.getElementById('monitor_video');\n" ,
-      "  if (status) status.innerText = 'Camera stopped.';\n" ,
+      "  if (status) status.innerText = 'Camera is idle. Start a session from the schedule to begin.';\n" ,
       "  if (video) { video.pause(); video.srcObject = null; }\n" ,
       "  currentLectureId = null;\n" ,
       "  currentSessionMode = 'full';\n" ,
@@ -349,41 +491,65 @@ ui <- fluidPage(
       "  var canvas = document.getElementById('monitor_canvas');\n" ,
       "  var status = document.getElementById('camera_status');\n" ,
       "  if (!video || !canvas || !status) return;\n" ,
-      "  canvas.width = video.videoWidth || 640;\n" ,
-      "  canvas.height = video.videoHeight || 480;\n" ,
+      "  var w = video.videoWidth || 0, h = video.videoHeight || 0;\n" ,
+      "  if (w < 16 || h < 16) {\n" ,
+      "    status.innerText = 'Camera warming up… waiting for video frames.';\n" ,
+      "    return;\n" ,
+      "  }\n" ,
+      "  canvas.width = w;\n" ,
+      "  canvas.height = h;\n" ,
       "  var ctx = canvas.getContext('2d');\n" ,
       "  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);\n" ,
       "  canvas.toBlob(function(blob) {\n" ,
-      "    if (!blob) return;\n" ,
+      "    if (!blob) {\n" ,
+      "      if (status) status.innerText = 'Capture skipped — empty frame (browser blocked canvas draw).';\n" ,
+      "      return;\n" ,
+      "    }\n" ,
       "    var data = new FormData();\n" ,
       "    data.append('file', blob, 'frame.jpg');\n" ,
       "    data.append('lecture_id', currentLectureId);\n" ,
       "    data.append('mode', currentSessionMode);\n" ,
       "    var headers = {};\n" ,
       "    if (eduPulseApiToken) { headers['Authorization'] = 'Bearer ' + eduPulseApiToken; }\n" ,
-      "    fetch('http://localhost:8000/analyze-attendance-frame', { method: 'POST', body: data, headers: headers })\n" ,
-      "      .then(function(response) { return response.json().then(function(json) { if (!response.ok) { throw new Error(json.detail || 'Capture failed'); } return json; }); })\n" ,
-      "      .then(function(json) {\n" ,
-      "        Shiny.setInputValue('live_face_response', JSON.stringify(json), { priority: 'event' });\n" ,
-      "        var summary = document.getElementById('face_recognition_status');\n" ,
-      "        if (summary) {\n" ,
-      "          var recognized = Array.isArray(json.recognized) ? json.recognized : [];\n" ,
-      "          if (recognized.length === 0) {\n" ,
-      "            summary.innerHTML = '<strong>Face status:</strong> No enrolled student recognized<br><strong>Faces:</strong> ' + (json.total_faces || 0);\n" ,
-      "          } else {\n" ,
-      "            summary.innerHTML = '<strong>Recognized:</strong> ' + recognized.length + '<br><strong>Present:</strong> ' + (json.present_count || 0) + ' / ' + (json.expected_students || 0);\n" ,
+      "    fetch(eduPulseApiBase + '/analyze-attendance-frame', { method: 'POST', body: data, credentials: 'omit', headers: headers })\n" ,
+      "      .then(function(response) {\n" ,
+      "        return response.text().then(function(txt) {\n" ,
+      "          var json = null;\n" ,
+      "          try { json = txt ? JSON.parse(txt) : null; } catch (e) { json = null; }\n" ,
+      "          if (!response.ok) {\n" ,
+      "            var detail = '';\n" ,
+      "            if (json && json.detail !== undefined)\n" ,
+      "              detail = (typeof json.detail === 'string') ? json.detail : JSON.stringify(json.detail);\n" ,
+      "            else if (txt) detail = txt;\n" ,
+      "            throw new Error('HTTP ' + response.status + (detail ? (': ' + detail) : ''));\n" ,
       "          }\n" ,
-      "        }\n" ,
+      "          return json;\n" ,
+      "        });\n" ,
+      "      })\n" ,
+      "      .then(function(json) {\n" ,
+      "        if (!json) return;\n" ,
+      "        Shiny.setInputValue('live_face_response', JSON.stringify(json), { priority: 'event' });\n" ,
       "        status.innerText = 'Camera active. Last capture: ' + new Date().toLocaleTimeString();\n" ,
       "      })\n" ,
       "      .catch(function(err) {\n" ,
       "        console.error('Frame capture error:', err);\n" ,
+      "        if (status) status.innerText = 'Analyze frame failed — ' + (err && err.message ? err.message : String(err));\n" ,
       "      });\n" ,
       "  }, 'image/jpeg', 0.7);\n" ,
       "}\n" ,
       "Shiny.addCustomMessageHandler('startCamera', function(message) { startMonitorCamera(message); });\n" ,
       "Shiny.addCustomMessageHandler('stopCamera', function(message) { stopMonitorCamera(); });\n" ,
       "Shiny.addCustomMessageHandler('setApiToken', function(message) { eduPulseApiToken = message && message.token ? message.token : null; });\n" ,
+      "Shiny.addCustomMessageHandler('highlightSb', function(m) {\n" ,
+      "  var p = String(m.panel);\n" ,
+      "  document.querySelectorAll('#main_app .ep-navbar .ep-nav-link.ep-top-active').forEach(function(el){ el.classList.remove('ep-top-active'); });\n" ,
+      "  document.querySelectorAll('.ep-primary-sidebar [data-panel]').forEach(function(el){ el.classList.remove('ep-sb-active'); });\n" ,
+      "  document.querySelectorAll('.ep-primary-sidebar [data-panel=\"' + p + '\"]').forEach(function(el){ el.classList.add('ep-sb-active'); });\n" ,
+      "  var nm = ({ dashboard:'nav_dashboard', monitor:'nav_monitor', report:'nav_report',\n" ,
+      "    graphs:'nav_graphs', confusion:'nav_confusion', groups:'nav_groups',\n" ,
+      "    attendance:'nav_attendance', settings:'nav_settings' })[p];\n" ,
+      "  if (nm) { var tg = document.getElementById(nm); if (tg) tg.classList.add('ep-top-active'); }\n" ,
+      "});\n" ,
       "function toggleTheme() {\n" ,
       "  var html = document.documentElement;\n" ,
       "  var btn = document.getElementById('toggle_theme');\n" ,
@@ -549,47 +715,56 @@ ui <- fluidPage(
     div(
       id = "main_app",
       
-      # Navbar
-      div(
-        class = "ep-navbar",
-        div(class = "ep-brand", "EduPulse AI"),
-        actionButton("nav_dashboard",  "Dashboard",        class = "ep-nav-link"),
-        actionButton("nav_monitor",    "Live Monitor",     class = "ep-nav-link"),
-        actionButton("nav_report",     "Report",           class = "ep-nav-link"),
-        actionButton("nav_graphs",     "Graphs & Trends",  class = "ep-nav-link"),
-        actionButton("nav_confusion",  "Confusion Alerts", class = "ep-nav-link"),
-        actionButton("nav_groups",     "Groups",           class = "ep-nav-link"),
-        actionButton("nav_attendance", "Attendance",       class = "ep-nav-link"),
-        actionButton("nav_settings",   "Settings",         class = "ep-nav-link"),
-        div(class = "badge-role ms-1", textOutput("role_badge", inline = TRUE)),
-        actionButton("toggle_theme", "☀️ Light",            class = "btn btn-sm btn-outline-primary ms-1"),
-        actionButton("logout_btn", "Logout",
-                     class = "btn btn-sm btn-outline-primary ms-1",
-                     style = "font-size:0.75rem; padding:3px 12px;"
-        )
-      ),
-      
-      # Body
-      div(
-        style = "display:flex;",
-        
-        # Sidebar
+      div(class = "ep-shell-inner",
+
+        div(class = "ep-main-stack",
+          div(class = "ep-navbar ep-shell-navbar",
+            div(class = "ep-nav-links",
+              actionButton("nav_dashboard", "Dashboard", class = "btn ep-nav-link action-button"),
+              actionButton("nav_monitor", "Live Monitor", class = "btn ep-nav-link action-button"),
+              actionButton("nav_graphs", "Analytics", class = "btn ep-nav-link action-button"),
+              actionButton("nav_report", "Reports", class = "btn ep-nav-link action-button"),
+              actionButton("nav_confusion", "Alerts", class = "btn ep-nav-link action-button"),
+              actionButton("nav_groups", "Groups", class = "btn ep-nav-link action-button"),
+              actionButton("nav_attendance", "Attendance", class = "btn ep-nav-link action-button"),
+              actionButton("nav_settings", "Settings", class = "btn ep-nav-link action-button")
+            ),
+            div(class = "ep-navbar-toolbar",
+              div(class = "ep-nav-tail",
+              div(class = "badge-role ms-1", textOutput("role_badge", inline = TRUE)),
+              tags$button(
+                type = "button",
+                id = "ep_top_help_btn",
+                class = "btn btn-sm ep-icon-soft",
+                onclick = "alert('Tips: Pick a week, filter course/group, then start a session from the schedule table.')",
+                `aria-label` = "Tips",
+                title = "Tips",
+                tags$span(class = "material-symbols-outlined", "notifications")
+              ),
+              tags$button(
+                type = "button", id = "ep_dummy_avatar", class = "btn btn-sm ep-avatar-chip",
+                `aria-label` = "Profile", title = "Profile",
+                tags$span(class = "material-symbols-outlined", "person")
+              ),
+              actionButton("toggle_theme", "☀️ Light", class = "btn btn-sm btn-outline-primary ms-1"),
+              actionButton("logout_btn", "Logout",
+                class = "btn btn-sm btn-outline-primary ms-1",
+                style = "font-size:0.75rem; padding:3px 12px;"
+              )
+            )
+            )
+          ),
+
+          div(class = "ep-body-row",
+
+        # Sidebar (week + filters)
         div(
-          class = "sidebar",
+          class = "sidebar ep-context-sidebar",
           
           div(class = "ep-card-header mt-1", "📅 Select Week"),
           div(
             class = "week-grid",
-            lapply(1:16, function(w) {
-              tags$button(
-                paste("W", w),
-                id      = paste0("week_btn_", w),
-                class   = "week-btn",
-                onclick = sprintf(
-                  "Shiny.setInputValue('selected_week_click', %d, {priority: 'event'});", w
-                )
-              )
-            })
+            lapply(1:16, function(w) ep_week_nav_button(w, "week_btn_"))
           ),
           
           hr(class = "ep-hr"),
@@ -616,17 +791,31 @@ ui <- fluidPage(
         
         # Main content area
         div(
-          class = "main-panel",
+          class = "main-panel ep-main-scroll",
           
           # ── Lecturer Dashboard ────────────────────────────────────────────
           shinyjs::hidden(div(
             id = "panel_dashboard",
-            h1(class = "section-title", "📊 Lecturer Dashboard"),
-            p(class = "section-sub",   "16-Week Academic Semester Overview — select a week then click a lecture to analyse it"),
-            
-            div(class = "week-info-bar", textOutput("selected_week_display")),
-            
-            fluidRow(
+            div(class = "ep-dash-hero ep-dash-hero-slim ep-dash-hero-tight",
+              div(class = "ep-dash-hero-text",
+                tags$p(class = "ep-dash-greeting-inline", textOutput("dash_hero_line1")),
+                tags$p(class = "ep-dash-sub ep-dash-sub-compact", textOutput("dash_hero_line2"))
+              )
+            ),
+
+            div(class = "ep-section-head-dash",
+              h2(class = "ep-section-title-dash", "Semester overview"),
+              div(class = "week-info-bar ep-week-info-inline", textOutput("selected_week_display"))
+            ),
+
+            div(class = "ep-week-strip-wrap",
+              div(class = "ep-week-strip-label", "Jump to week"),
+              div(class = "ep-week-strip",
+                lapply(1:16, function(w) ep_week_nav_button(w, "ep_week_strip_"))
+              )
+            ),
+
+            fluidRow(class = "ep-dash-metrics-row ep-mt-std",
               column(3, div(class = "metric-card",
                             div(class = "metric-icon", "📚"),
                             div(class = "metric-value", textOutput("card_week_lectures")),
@@ -648,13 +837,22 @@ ui <- fluidPage(
                             div(class = "metric-label", "Confusion Alerts")
               ))
             ),
-            
-            div(class = "ep-card",
-                div(class = "ep-card-header", "📋 Weekly Schedule"),
-                p(style = "color:#64748b; font-size:0.82rem; margin-bottom:0.75rem;",
-                  "Click ▶ View to open a lecture in the Live Monitor."),
-                DTOutput("table_weekly_schedule")
+
+            div(class = "ep-card ep-sched-card",
+              div(class = "ep-sched-head",
+                  div(div(class = "ep-card-header ep-sched-title", HTML("Week schedule & analysis")),
+                      p(class = "ep-sched-hint",
+                        "Use filters on the left, then Actions to start or view sessions.")),
+                  tags$button(
+                    type = "button",
+                    class = "btn btn-sm ep-btn-export",
+                    onclick = "var a=document.getElementById('download_data'); if(a) a.click();",
+                    HTML('<span class="material-symbols-outlined ep-sbtn-ico">download</span> Export report')
+                  )
+              ),
+              DTOutput("table_weekly_schedule")
             )
+
           )),
           
           # ── Live Monitor ──────────────────────────────────────────────────
@@ -675,7 +873,6 @@ ui <- fluidPage(
                     ),
                     div(style = "flex:1 1 280px; min-width:280px;",
                         div(id = "camera_status", class = "alert alert-info", "Camera is idle. Click Start Session to begin."),
-                        div(id = "face_recognition_status", class = "alert alert-secondary", "Waiting for recognition results..."),
                         actionButton("stop_attendance_btn", "Stop Attendance",
                                      class = "btn btn-sm btn-outline-primary mb-2"),
                         uiOutput("live_face_summary")
@@ -919,9 +1116,11 @@ ui <- fluidPage(
             "position:fixed; top:0; left:0; width:100%; height:100%;",
             "background:rgba(0,0,0,0.5); z-index:9998; display:none;"
           ))
-          
-        ) # end main-panel
-      ) # end body flex
+
+        ) # end main-panel (.ep-main-scroll)
+          ) # end ep-body-row
+        ) # end ep-main-stack
+      ) # end ep-shell-inner
     ) # end main_app
   ) # end hidden
 )
@@ -952,24 +1151,52 @@ server <- function(input, output, session) {
     shinyjs::show(paste0("panel_", name))
   }
   
-  # Nav links
-  observeEvent(input$nav_dashboard,  ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("dashboard") })
-  observeEvent(input$nav_monitor,    ignoreInit=TRUE, show_panel("monitor"))
-  observeEvent(input$nav_report,     ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("report") })
-  observeEvent(input$nav_graphs,     ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("graphs") })
-  observeEvent(input$nav_confusion,  ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("confusion") })
-  observeEvent(input$nav_groups,     ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("groups") })
-  observeEvent(input$nav_attendance, ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("attendance") })
-  observeEvent(input$nav_settings,   ignoreInit=TRUE, { session$sendCustomMessage("stopCamera", list()); show_panel("settings") })
-  
-  # ── Week button active styling ────────────────────────────────────────────
+  # Unified nav: top pills + sidebar (same panels)
+  NAV_BINDINGS <- list(
+    list(ids = c("nav_dashboard", "sb_dashboard", "sb_new_analysis"), panel = "dashboard"),
+    list(ids = c("nav_monitor", "sb_monitor"), panel = "monitor"),
+    list(ids = c("nav_graphs", "sb_graphs"), panel = "graphs"),
+    list(ids = c("nav_report", "sb_report"), panel = "report"),
+    list(ids = c("nav_confusion", "sb_confusion"), panel = "confusion"),
+    list(ids = c("nav_groups", "sb_groups"), panel = "groups"),
+    list(ids = c("nav_attendance", "sb_attendance"), panel = "attendance"),
+    list(ids = c("nav_settings", "sb_settings"), panel = "settings")
+  )
+  activate_panel <- function(panel) {
+    if (!identical(panel, "monitor")) session$sendCustomMessage("stopCamera", list())
+    show_panel(panel)
+    session$sendCustomMessage("highlightSb", list(panel = panel))
+  }
+  for (b in NAV_BINDINGS) local({
+    tgt <- b$panel
+    idv <- b$ids
+    for (one in idv) {
+      local({
+        idi <- one
+        tgt2 <- tgt
+        observeEvent(input[[idi]], {
+          activate_panel(tgt2)
+        }, ignoreInit = TRUE)
+      })
+    }
+  })
+
+  observeEvent(input$sidebar_help_btn, ignoreInit = TRUE, {
+    showNotification(paste(
+      "Overview: pick a week with W1–W16, filter by course/group,",
+      "then use the schedule to start attendance, full monitor, or view a lecture."
+    ), type = "message", duration = 8)
+  })
+
+  # ── Week button active styling (context rail + dashboard strip) ───────────
   update_week_buttons <- function(selected) {
     for (w in 1:16) {
-      id <- paste0("week_btn_", w)
-      if (w == selected) {
-        shinyjs::runjs(sprintf("var el=document.getElementById('%s'); if(el) el.classList.add('active');", id))
-      } else {
-        shinyjs::runjs(sprintf("var el=document.getElementById('%s'); if(el) el.classList.remove('active');", id))
+      for (id in c(paste0("week_btn_", w), paste0("ep_week_strip_", w))) {
+        if (w == selected) {
+          shinyjs::runjs(sprintf("var el=document.getElementById('%s'); if(el) el.classList.add('active');", id))
+        } else {
+          shinyjs::runjs(sprintf("var el=document.getElementById('%s'); if(el) el.classList.remove('active');", id))
+        }
       }
     }
   }
@@ -979,7 +1206,9 @@ server <- function(input, output, session) {
   # This single observer catches all 16 buttons reliably.
   observeEvent(input$selected_week_click, {
     w <- as.integer(input$selected_week_click)
-    if (!is.na(w) && w >= 1 && w <= 16 && !is.null(app_data$user_role)) {
+    if (is.na(w) || w < 1L || w > 16L) return(invisible(NULL))
+    if (w >= EDUPULSE_FIRST_LOCKED_WEEK) return(invisible(NULL))
+    if (!is.null(app_data$user_role)) {
       app_data$selected_week <- w
       update_week_buttons(w)
     }
@@ -1019,7 +1248,7 @@ server <- function(input, output, session) {
       app_data$user_email <- user$email
       app_data$db_user_id <- if (!is.null(user$db_user_id)) user$db_user_id else NULL
       app_data$api_token <- api_auth$access_token
-      app_data$selected_week <- 1
+      app_data$selected_week <- EDUPULSE_ACTIVE_ACADEMIC_WEEK
       app_data$selected_lecture_id <- NULL
       session$sendCustomMessage("setApiToken", list(token = api_auth$access_token))
 
@@ -1030,8 +1259,10 @@ server <- function(input, output, session) {
 
       # Load & filter data with error handling
       tryCatch({
-        app_data$all_data       <- load_emotion_data()
-        app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
+        app_data$all_data       <- edu_sanitize_postgres_frame(load_emotion_data())
+        app_data$filtered_data  <- edu_sanitize_postgres_frame(
+          filter_by_role(app_data$all_data, user$role, user$user_id)
+        )
         raw_schedule            <- load_lecture_schedule()
         app_data$lecture_schedule <- filter_schedule_by_role(raw_schedule, user$role, user$user_id)
         app_data$semester_weeks <- load_semester_weeks()
@@ -1039,8 +1270,10 @@ server <- function(input, output, session) {
         # Hard fallback to CSV if DB fails unexpectedly
         message(paste("Login data load error:", e$message))
         USE_DATABASE <<- FALSE
-        app_data$all_data       <- load_emotion_data_csv()
-        app_data$filtered_data  <- filter_by_role(app_data$all_data, user$role, user$user_id)
+        app_data$all_data       <- edu_sanitize_postgres_frame(load_emotion_data_csv())
+        app_data$filtered_data  <- edu_sanitize_postgres_frame(
+          filter_by_role(app_data$all_data, user$role, user$user_id)
+        )
         raw_schedule            <- load_lecture_schedule_csv()
         app_data$lecture_schedule <- filter_schedule_by_role(raw_schedule, user$role, user$user_id)
         app_data$semester_weeks <- load_semester_weeks_csv()
@@ -1055,14 +1288,22 @@ server <- function(input, output, session) {
       updateSelectInput(session, "filter_group_schedule",
                         choices = c("All", get_groups_from_data(app_data$lecture_schedule)))
       
+      # Close auth modals (forgot-password overlay sits outside #main_app and can otherwise
+      # leave a fullscreen dim layer after login).
+      shinyjs::hide("auth_modal_overlay")
+      shinyjs::hide("forgot_password_modal")
+      shinyjs::hide("cp_modal_overlay")
+      shinyjs::hide("change_password_modal")
+
       # Switch UI
       shinyjs::hide("login_overlay")
       shinyjs::show("main_app")
       shinyjs::hide("login_error")
       
       show_panel("dashboard")
-      update_week_buttons(1)
-      
+      update_week_buttons(EDUPULSE_ACTIVE_ACADEMIC_WEEK)
+      session$sendCustomMessage("highlightSb", list(panel = "dashboard"))
+
       removeNotification("login_loading")
       showNotification(paste0("Welcome, ", user$name, "!"), type = "message", duration = 3)
       
@@ -1321,6 +1562,10 @@ server <- function(input, output, session) {
     }
     session$sendCustomMessage("stopCamera", list())
     session$sendCustomMessage("setApiToken", list(token = NULL))
+    shinyjs::hide("auth_modal_overlay")
+    shinyjs::hide("forgot_password_modal")
+    shinyjs::hide("cp_modal_overlay")
+    shinyjs::hide("change_password_modal")
     is_logged_in(FALSE)
     app_data$user_role           <- NULL
     app_data$user_id             <- NULL
@@ -1329,7 +1574,7 @@ server <- function(input, output, session) {
     app_data$user_email          <- NULL
     app_data$api_token           <- NULL
     app_data$filtered_data       <- NULL
-    app_data$selected_week       <- 1
+    app_data$selected_week       <- EDUPULSE_ACTIVE_ACADEMIC_WEEK
     app_data$selected_lecture_id <- NULL
     app_data$live_face_response  <- NULL
     app_data$live_attendance     <- NULL
@@ -1499,7 +1744,7 @@ server <- function(input, output, session) {
     app_data$selected_lecture_id <- input$view_lecture_clicked
     app_data$live_face_response <- NULL
     attendance <- call_api(paste0("/attendance/", input$view_lecture_clicked), token = app_data$api_token)
-    app_data$live_attendance <- if (!is.null(attendance) && !isTRUE(attendance$error)) attendance$attendance else NULL
+    app_data$live_attendance <- if (!is.null(attendance) && !isTRUE(attendance$error)) normalize_live_attendance(attendance$attendance) else NULL
     show_panel("monitor")
     showNotification(paste("Viewing:", input$view_lecture_clicked), type="message", duration=2)
   })
@@ -1534,7 +1779,7 @@ server <- function(input, output, session) {
     }) %...>% (function(result) {
       if (isTRUE(result$success)) {
         showNotification(paste0("Session started (", session_mode, " mode)"), type = "message", duration = 3)
-        app_data$live_attendance <- result$data$attendance
+        app_data$live_attendance <- normalize_live_attendance(result$data$attendance)
         shinyjs::delay(300, {
           session$sendCustomMessage("startCamera", list(lecture_id = lecture_id, mode = session_mode))
         })
@@ -1567,7 +1812,7 @@ server <- function(input, output, session) {
     )
     session$sendCustomMessage("stopCamera", list())
     if (!is.null(result) && !isTRUE(result$error)) {
-      app_data$live_attendance <- result$attendance
+      app_data$live_attendance <- normalize_live_attendance(result$attendance)
       showNotification(paste("Attendance stopped for lecture:", lid), type = "message", duration = 3)
     } else {
       showNotification("Failed to stop attendance session.", type = "error", duration = 5)
@@ -1588,6 +1833,27 @@ server <- function(input, output, session) {
       data <- data %>% filter(group_id == grp)
     
     data
+  })
+
+  # Simulated analysis for Weeks 1..(ACTIVE−1); real rows for ACTIVE week; locked weeks omitted.
+  visualization_emotion_data <- reactive({
+    req(is_logged_in())
+    fc <- input$filter_course_schedule
+    fg <- input$filter_group_schedule
+    if (is.null(fc) || fc == "") fc <- "All"
+    if (is.null(fg) || fg == "") fg <- "All"
+    edu_sanitize_postgres_frame(edu_merge_prior_synthetic_weeks(
+      app_data$filtered_data,
+      app_data$lecture_schedule,
+      fc,
+      fg
+    ))
+  })
+
+  dashboard_week_slice <- reactive({
+    viz <- visualization_emotion_data()
+    if (is.null(viz)) return(data.frame())
+    dplyr::filter(viz, academic_week == app_data$selected_week)
   })
   
   # ── Reactive: weekly schedule ─────────────────────────────────────────────
@@ -1659,26 +1925,53 @@ server <- function(input, output, session) {
   output$card_week_lectures <- renderText({ nrow(weekly_schedule_reactive()) })
   
   output$card_week_engagement <- renderText({
-    if (is.null(app_data$filtered_data)) return("—")
-    d <- app_data$filtered_data %>% filter(academic_week == app_data$selected_week)
+    req(is_logged_in())
+    d <- dashboard_week_slice()
     if (nrow(d)==0) return("—")
     round(mean(d$engagement_score, na.rm=TRUE), 2)
   })
   
   output$card_week_focus <- renderText({
-    if (is.null(app_data$filtered_data)) return("—")
-    d <- app_data$filtered_data %>% filter(academic_week == app_data$selected_week)
+    req(is_logged_in())
+    d <- dashboard_week_slice()
     if (nrow(d)==0) return("—")
     round(mean(d$focus_score, na.rm=TRUE), 2)
   })
   
   output$card_week_confusion <- renderText({
-    if (is.null(app_data$filtered_data)) return("0")
-    d <- app_data$filtered_data %>% filter(academic_week == app_data$selected_week)
+    req(is_logged_in())
+    d <- dashboard_week_slice()
     if (nrow(d)==0) return("0")
     nrow(compute_confusion_spikes(d))
   })
-  
+
+  output$dash_hero_line1 <- renderText({
+    nm <- app_data$user_name
+    if (is.null(nm) || !nzchar(nm)) nm <- ""
+    greeting <- if (nzchar(nm)) paste0("Hello, ", nm) else "Teaching dashboard"
+    sw <- suppressWarnings(as.integer(app_data$selected_week))
+    if (!is.na(sw) && sw < EDUPULSE_ACTIVE_ACADEMIC_WEEK) {
+      paste0(greeting, " · Week ", sw)
+    } else {
+      greeting
+    }
+  })
+
+  output$dash_hero_line2 <- renderText({
+    req(is_logged_in())
+    w <- app_data$selected_week
+    nlec <- nrow(weekly_schedule_reactive())
+    fc <- input$filter_course_schedule
+    fg <- input$filter_group_schedule
+    parts <- c(
+      paste0("Week ", w),
+      paste0(nlec, if (isTRUE(nlec == 1)) " session scheduled" else " sessions scheduled")
+    )
+    if (!is.null(fc) && nzchar(fc) && fc != "All") parts <- c(parts, paste("Course:", fc))
+    if (!is.null(fg) && nzchar(fg) && fg != "All") parts <- c(parts, paste("Group:", fg))
+    paste(parts, collapse = " · ")
+  })
+
   # ── Live Monitor cards ────────────────────────────────────────────────────
   output$card_engagement <- renderText({
     m <- compute_summary_metrics(filtered_data_reactive()); round(m$avg_engagement,3)
@@ -1689,7 +1982,7 @@ server <- function(input, output, session) {
   output$card_attendance <- renderText({
     att <- app_data$live_attendance
     if (!is.null(att) && is.data.frame(att) && nrow(att) > 0) {
-      present <- sum(att$status %in% c("Present", "Returned"), na.rm = TRUE)
+      present <- attendance_present_count(att)
       return(paste0(round((present / nrow(att)) * 100, 1), "%"))
     }
     m <- compute_summary_metrics(filtered_data_reactive()); paste0(round(m$attendance_rate*100,1),"%")
@@ -1700,7 +1993,7 @@ server <- function(input, output, session) {
   output$card_present <- renderText({
     att <- app_data$live_attendance
     if (!is.null(att) && is.data.frame(att) && nrow(att) > 0) {
-      return(sum(att$status %in% c("Present", "Returned"), na.rm = TRUE))
+      return(attendance_present_count(att))
     }
     m <- compute_summary_metrics(filtered_data_reactive()); m$students_present
   })
@@ -1724,26 +2017,56 @@ server <- function(input, output, session) {
   
   observeEvent(input$live_face_response, {
     req(input$live_face_response)
-    parsed <- tryCatch(fromJSON(input$live_face_response), error = function(e) NULL)
-    if (!is.null(parsed)) {
-      app_data$live_face_response <- parsed
-      if (!is.null(parsed$attendance)) {
-        app_data$live_attendance <- parsed$attendance
-      }
+    parsed <- tryCatch(
+      fromJSON(input$live_face_response, simplifyVector = TRUE),
+      error = function(e) NULL
+    )
+    if (is.null(parsed)) return(invisible(NULL))
 
-      recognized <- parsed$recognized
-      if (is.data.frame(recognized) && nrow(recognized) > 0) {
-        lid <- app_data$selected_lecture_id
-        for (i in seq_len(nrow(recognized))) {
-          row <- as.list(recognized[i, , drop = FALSE])
-          new_row <- build_emotion_flat_row(row, lid)
-          if (!is.null(app_data$all_data) && nrow(app_data$all_data) > 0) {
-            app_data$all_data <- bind_rows(app_data$all_data, new_row)
-            app_data$filtered_data <- filter_by_role(app_data$all_data, app_data$user_role, app_data$user_id)
-          }
+    parsed <- edu_normalize_live_frame_payload(parsed)
+
+    lid <- app_data$selected_lecture_id
+    tok <- app_data$api_token
+
+    # Reload roster after every analyzed frame — same source counts as Postgres (fixes stale JSON vs DT/cards drift).
+    if (!is.null(lid) && nzchar(as.character(lid)) && !is.null(tok) && nzchar(tok)) {
+      refreshed <- tryCatch(call_api(paste0("/attendance/", lid), token = tok, timeout_sec = 30),
+                            error = function(e) NULL)
+      if (!is.null(refreshed) && !isTRUE(refreshed$error) && !is.null(refreshed$attendance)) {
+        app_data$live_attendance <- normalize_live_attendance(refreshed$attendance)
+        parsed$present_count <- refreshed$present_count %||% parsed$present_count
+        parsed$absent_count <- refreshed$absent_count %||% parsed$absent_count
+        parsed$expected_students <- refreshed$expected_students %||% parsed$expected_students
+        parsed$session_status <- refreshed$session_status %||% parsed$session_status
+        parsed$attendance <- refreshed$attendance
+      } else if (!is.null(parsed$attendance)) {
+        app_data$live_attendance <- normalize_live_attendance(parsed$attendance)
+      }
+    } else if (!is.null(parsed$attendance)) {
+      app_data$live_attendance <- normalize_live_attendance(parsed$attendance)
+    }
+
+    app_data$live_face_response <- parsed
+
+    recognized <- parsed$recognized
+    if (!inherits(recognized, "data.frame") || nrow(recognized) < 1L) return(invisible(NULL))
+    tryCatch({
+      for (i in seq_len(nrow(recognized))) {
+        row <- as.list(recognized[i, , drop = FALSE])
+        new_row <- build_emotion_flat_row(row, lid)
+        if (!is.null(app_data$all_data) && inherits(app_data$all_data, "data.frame") &&
+            nrow(app_data$all_data) > 0) {
+          app_data$all_data <- edu_sanitize_postgres_frame(
+            dplyr::bind_rows(app_data$all_data, new_row)
+          )
+          app_data$filtered_data <- edu_sanitize_postgres_frame(
+            filter_by_role(app_data$all_data, app_data$user_role, app_data$user_id)
+          )
         }
       }
-    }
+    }, error = function(e) {
+      message("Live telemetry append skipped: ", e$message)
+    })
   })
   
   output$live_face_summary <- renderUI({
@@ -1751,20 +2074,35 @@ server <- function(input, output, session) {
     if (is.null(res)) {
       HTML('<div style="color:#94a3b8;">No frame analyzed yet.</div>')
     } else if (!is.data.frame(res$recognized) || nrow(res$recognized) == 0) {
+      msg <- ""
+      if ("message" %in% names(res) && length(res$message)) {
+        msg <- trimws(paste(as.character(res$message)[1], collapse = ""))
+      }
+      if (!nzchar(msg)) msg <- "No enrolled face matched (or backends returned recognized=false)."
       HTML(sprintf(
-        '<div><strong>Recognized:</strong> 0<br/><strong>Faces:</strong> %s<br/><strong>Unknown:</strong> %s</div>',
-        res$total_faces %||% 0, res$unknown_count %||% 0
+        '%s<div><strong>Recognized this frame:</strong> 0<br/><small style="color:#94a3b8;">Faces: %s · Unknown: %s</small></div>',
+        ifelse(nzchar(msg), sprintf('<p style="margin:0 0 0.5rem 0;">%s</p>', htmltools::htmlEscape(msg)), ""),
+        if (!is.null(res$total_faces)) as.character(res$total_faces) else "—",
+        if (!is.null(res$unknown_count)) as.character(res$unknown_count) else "—"
       ))
     } else {
-      rows <- apply(res$recognized, 1, function(row) {
-        sprintf(
+      rdf <- res$recognized
+      rows <- character(nrow(rdf))
+      co <- function(z) if (length(z)) trimws(paste(as.character(z[1]), collapse = "")) else ""
+      for (i in seq_len(nrow(rdf))) {
+        rw <- as.list(rdf[i, , drop = FALSE])
+        nm <- suppressWarnings(htmlEscape(if (nzchar(co(rw[["student_name"]]))) co(rw[["student_name"]]) else ""))
+        sid <- suppressWarnings(htmlEscape(co(rw[["student_id"]])))
+        emv <- suppressWarnings(co(rw[["emotion"]]))
+        emTxt <- ifelse(nzchar(emv), emv, "Neutral")
+        fc <- suppressWarnings(as.numeric(co(rw[["face_confidence"]])))
+        if (length(fc) != 1L || is.na(fc)) fc <- 0 else fc <- fc[1]
+        rows[[i]] <- sprintf(
           '<div><strong>%s</strong> (%s) — %s, face %s%%</div>',
-          htmlEscape(row[["student_name"]]),
-          htmlEscape(row[["student_id"]]),
-          htmlEscape(row[["emotion"]]),
-          round(as.numeric(row[["face_confidence"]]) * 100, 1)
+          nm, sid, suppressWarnings(htmlEscape(emTxt)),
+          round(fc * 100, 1)
         )
-      })
+      }
       HTML(paste0(
         '<div><strong>Recognized:</strong> ', nrow(res$recognized),
         '<br/><strong>Present:</strong> ', res$present_count %||% 0,
@@ -1806,13 +2144,13 @@ server <- function(input, output, session) {
   output$chart_engagement_ranking<- renderPlot({ render_student_engagement_ranking(filtered_data_reactive(),10) },  bg="#0b1220")
   output$chart_confusion_ranking <- renderPlot({ render_confusion_rate_by_student(filtered_data_reactive(),10) },   bg="#0b1220")
   output$chart_engagement_focus  <- renderPlot({ render_engagement_vs_focus_scatter(filtered_data_reactive()) },    bg="#0b1220")
-  output$chart_semester_engagement<-renderPlot({ render_semester_engagement_trend(app_data$filtered_data) },        bg="#0b1220")
-  output$chart_semester_confusion <- renderPlot({ render_semester_confusion_trend(app_data$filtered_data) },        bg="#0b1220")
-  output$chart_course_comparison  <- renderPlot({ render_course_engagement_comparison(app_data$filtered_data) },    bg="#0b1220")
+  output$chart_semester_engagement<-renderPlot({ render_semester_engagement_trend(visualization_emotion_data()) },        bg="#0b1220")
+  output$chart_semester_confusion <- renderPlot({ render_semester_confusion_trend(visualization_emotion_data()) },        bg="#0b1220")
+  output$chart_course_comparison  <- renderPlot({ render_course_engagement_comparison(visualization_emotion_data()) },    bg="#0b1220")
   
   # ── Emotion heatmap (new) ─────────────────────────────────────────────────
   output$chart_emotion_heatmap <- renderPlot({
-    d <- app_data$filtered_data
+    d <- visualization_emotion_data()
     if (is.null(d) || nrow(d)==0) {
       return(ggplot() +
                theme(plot.background=element_rect(fill="#0b1220",colour=NA),
@@ -1840,7 +2178,7 @@ server <- function(input, output, session) {
       ) +
       scale_x_continuous(breaks=1:16) +
       labs(title="Emotion Share Heatmap — 16 Weeks",
-           subtitle="Percentage of emotion records per academic week",
+           subtitle="Weeks 1–12 modeled snapshots; Week 13 from records; Weeks 14–16 locked",
            x="Academic Week", y=NULL) +
       theme_minimal(base_size=12) +
       theme(
