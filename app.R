@@ -89,21 +89,39 @@ normalize_live_attendance <- function(att) {
   if (is.null(att)) return(NULL)
   if (inherits(att, "tbl_df")) att <- as.data.frame(att, stringsAsFactors = FALSE)
   if (!inherits(att, "data.frame") && inherits(att, "list")) {
+    if (length(att) == 0L) return(NULL)
     merged <- NULL
     if (length(att) >= 1L && is.list(att[[1L]])) {
-      merged <- tryCatch(dplyr::bind_rows(lapply(att, function(r) as.data.frame(r, stringsAsFactors = FALSE))),
-                         error = function(e) NULL)
+      merged <- tryCatch({
+        dplyr::bind_rows(lapply(att, function(r) {
+          if (!is.list(r)) return(NULL)
+          as.data.frame(r, stringsAsFactors = FALSE)
+        }))
+      }, error = function(e) NULL)
     }
-    if (!is.null(merged)) att <- as.data.frame(merged, stringsAsFactors = FALSE)
-    else att <- tryCatch(as.data.frame(att, stringsAsFactors = FALSE), error = function(e) NULL)
+    if (!is.null(merged) && ncol(merged) > 0) {
+      att <- as.data.frame(merged, stringsAsFactors = FALSE)
+    } else {
+      att <- tryCatch(as.data.frame(att, stringsAsFactors = FALSE), error = function(e) NULL)
+    }
   }
-  if (!is.data.frame(att) || nrow(att) == 0) return(att)
+  if (!is.data.frame(att) || nrow(att) == 0) return(if (inherits(att, "data.frame")) att else NULL)
+  if ("student_code" %in% names(att) && !"student_id" %in% names(att)) names(att)[names(att) == "student_code"] <- "student_id"
   if ("status" %in% names(att)) {
     ch <- ifelse(is.na(att$status), "", trimws(as.character(att$status)))
     ch <- ifelse(nzchar(ch), ch, "Absent")
     att$status <- ch
   }
   att
+}
+
+# Reload roster snapshot from backend (FastAPI POST /start-session does not embed attendance.)
+refresh_live_roster <- function(lecture_id, token) {
+  if (is.null(lecture_id) || !nzchar(as.character(lecture_id))) return(NULL)
+  if (is.null(token) || !nzchar(as.character(token))) return(NULL)
+  snap <- tryCatch(call_api(paste0("/attendance/", lecture_id), token = token, timeout_sec = 30),
+                   error = function(e) NULL)
+  if (!is.null(snap) && !isTRUE(snap$error) && !is.null(snap$attendance)) normalize_live_attendance(snap$attendance) else NULL
 }
 
 # Robust present tally (PostgreSQL/driver/jsonlite sometimes mixes casing/spaces.)
@@ -1779,7 +1797,7 @@ server <- function(input, output, session) {
     }) %...>% (function(result) {
       if (isTRUE(result$success)) {
         showNotification(paste0("Session started (", session_mode, " mode)"), type = "message", duration = 3)
-        app_data$live_attendance <- normalize_live_attendance(result$data$attendance)
+        app_data$live_attendance <- refresh_live_roster(lecture_id, api_token)
         shinyjs::delay(300, {
           session$sendCustomMessage("startCamera", list(lecture_id = lecture_id, mode = session_mode))
         })
@@ -1812,7 +1830,9 @@ server <- function(input, output, session) {
     )
     session$sendCustomMessage("stopCamera", list())
     if (!is.null(result) && !isTRUE(result$error)) {
-      app_data$live_attendance <- normalize_live_attendance(result$attendance)
+      roster <- normalize_live_attendance(result$attendance)
+      app_data$live_attendance <- if (!is.null(roster) && is.data.frame(roster) && nrow(roster) > 0)
+        roster else refresh_live_roster(lid, app_data$api_token)
       showNotification(paste("Attendance stopped for lecture:", lid), type = "message", duration = 3)
     } else {
       showNotification("Failed to stop attendance session.", type = "error", duration = 5)
@@ -1981,21 +2001,37 @@ server <- function(input, output, session) {
   })
   output$card_attendance <- renderText({
     att <- app_data$live_attendance
+    lf <- app_data$live_face_response
     if (!is.null(att) && is.data.frame(att) && nrow(att) > 0) {
       present <- attendance_present_count(att)
-      return(paste0(round((present / nrow(att)) * 100, 1), "%"))
+      denom <- nrow(att)
+      if (denom > 0) return(paste0(round((present / denom) * 100, 1), "%"))
     }
-    m <- compute_summary_metrics(filtered_data_reactive()); paste0(round(m$attendance_rate*100,1),"%")
+    pc <- suppressWarnings(as.integer(lf$present_count))
+    ex <- suppressWarnings(as.integer(lf$expected_students))
+    if (length(pc) != 1L || length(ex) != 1L || is.na(pc) || is.na(ex) || ex <= 0L) {
+      return({
+        m <- compute_summary_metrics(filtered_data_reactive())
+        paste0(round(m$attendance_rate * 100, 1), "%")
+      })
+    }
+    paste0(round((pc / ex) * 100, 1), "%")
   })
   output$card_confusion <- renderText({
     m <- compute_summary_metrics(filtered_data_reactive()); paste0(round(m$confusion_rate*100,1),"%")
   })
   output$card_present <- renderText({
     att <- app_data$live_attendance
+    lf <- app_data$live_face_response
     if (!is.null(att) && is.data.frame(att) && nrow(att) > 0) {
-      return(attendance_present_count(att))
+      return(as.character(attendance_present_count(att)))
     }
-    m <- compute_summary_metrics(filtered_data_reactive()); m$students_present
+    pc <- suppressWarnings(as.integer(lf$present_count))
+    if (length(pc) != 1L || is.na(pc)) {
+      m <- compute_summary_metrics(filtered_data_reactive())
+      return(as.character(m$students_present))
+    }
+    as.character(pc)
   })
   output$card_dominant_emotion <- renderText({
     d <- filtered_data_reactive()
@@ -2032,13 +2068,14 @@ server <- function(input, output, session) {
     if (!is.null(lid) && nzchar(as.character(lid)) && !is.null(tok) && nzchar(tok)) {
       refreshed <- tryCatch(call_api(paste0("/attendance/", lid), token = tok, timeout_sec = 30),
                             error = function(e) NULL)
-      if (!is.null(refreshed) && !isTRUE(refreshed$error) && !is.null(refreshed$attendance)) {
-        app_data$live_attendance <- normalize_live_attendance(refreshed$attendance)
+      if (!is.null(refreshed) && !isTRUE(refreshed$error)) {
+        roster_df <- normalize_live_attendance(refreshed$attendance)
+        if (!is.null(roster_df) && is.data.frame(roster_df) && nrow(roster_df) > 0) app_data$live_attendance <- roster_df
+        if (!is.null(refreshed$attendance)) parsed$attendance <- refreshed$attendance
         parsed$present_count <- refreshed$present_count %||% parsed$present_count
         parsed$absent_count <- refreshed$absent_count %||% parsed$absent_count
         parsed$expected_students <- refreshed$expected_students %||% parsed$expected_students
         parsed$session_status <- refreshed$session_status %||% parsed$session_status
-        parsed$attendance <- refreshed$attendance
       } else if (!is.null(parsed$attendance)) {
         app_data$live_attendance <- normalize_live_attendance(parsed$attendance)
       }
