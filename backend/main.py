@@ -89,10 +89,10 @@ class UserPublic(BaseModel):
     id: int
     email: str
     role: str
-    institution_id: str
+    institution_id: Optional[str]
     is_active: bool
     name: str
-    user_code: str
+    user_code: Optional[str]
 
 
 class AuthResponse(BaseModel):
