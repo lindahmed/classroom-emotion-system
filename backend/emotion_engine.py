@@ -5,7 +5,10 @@ import os
 import tempfile
 from typing import Any
 
+import io
+
 import numpy as np
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +32,20 @@ ENGAGEMENT_SCORES = {
     "Bored": 0.20,
 }
 
+VIT_EMOTION_MAPPING = {
+    "Angry": "Confused",
+    "Disgusted": "Bored",
+    "Fearful": "Confused",
+    "Happy": "Happy",
+    "Neutral": "Neutral",
+    "Sad": "Bored",
+    "Surprised": "Confused",
+}
+
 _EMOTION_MODEL: Any | None = None
 _FACE_CASCADE: Any | None = None
 _SMILE_CASCADE: Any | None = None
+_VIT_PIPELINE: Any | None = None
 
 
 def _compute_focus_score(emotion: str, confidence: float) -> float:
@@ -47,7 +61,7 @@ def _compute_focus_score(emotion: str, confidence: float) -> float:
 
 def warmup_emotion_model() -> None:
     """Pre-load emotion path so first full-mode frame does not stall."""
-    global _FACE_CASCADE, _SMILE_CASCADE, _EMOTION_MODEL
+    global _FACE_CASCADE, _SMILE_CASCADE, _EMOTION_MODEL, _VIT_PIPELINE
     if _engine == "deepface":
         if _EMOTION_MODEL is not None:
             return
@@ -56,6 +70,24 @@ def warmup_emotion_model() -> None:
         logger.info("Warming up emotion model (DeepFace)")
         _EMOTION_MODEL = DeepFace.build_model("Emotion")
         logger.info("Emotion model ready (DeepFace)")
+        return
+
+    if _engine == "vit":
+        if _VIT_PIPELINE is not None:
+            return
+        from transformers import pipeline as hf_pipeline
+
+        model_name = os.getenv(
+            "EDUPULSE_VIT_MODEL",
+            "mo-thecreator/vit-Facial-Expression-Recognition",
+        )
+        logger.info("Warming up ViT emotion model (%s)", model_name)
+        _VIT_PIPELINE = hf_pipeline(
+            "image-classification",
+            model=model_name,
+            top_k=7,
+        )
+        logger.info("ViT emotion model ready (%s)", model_name)
         return
 
     import cv2
@@ -75,6 +107,8 @@ def warmup_emotion_model() -> None:
 def analyze_emotion(image_bytes: bytes):
     if _engine == "deepface":
         return _analyze_emotion_deepface(image_bytes)
+    if _engine == "vit":
+        return _analyze_emotion_vit(image_bytes)
     return _analyze_emotion_opencv(image_bytes)
 
 
@@ -117,6 +151,44 @@ def _analyze_emotion_deepface(image_bytes: bytes):
                 os.unlink(temp_path)
             except FileNotFoundError:
                 pass
+
+
+def _analyze_emotion_vit(image_bytes: bytes):
+    """Analyze emotion using HuggingFace ViT model fine-tuned on AffectNet."""
+    global _VIT_PIPELINE
+
+    if _VIT_PIPELINE is None:
+        warmup_emotion_model()
+
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        results = _VIT_PIPELINE(image)
+        scores = {r["label"]: float(r["score"]) for r in results}
+
+        dominant_label = max(scores, key=scores.get)
+        confidence = scores[dominant_label]
+
+        emotion = VIT_EMOTION_MAPPING.get(dominant_label, "Neutral")
+
+        return {
+            "emotion": emotion,
+            "confidence": confidence,
+            "engagement_score": ENGAGEMENT_SCORES[emotion],
+            "focus_score": _compute_focus_score(emotion, confidence),
+            "engine": "vit",
+        }
+    except Exception as exc:
+        logger.exception("ViT emotion analysis failed: %s", exc)
+        return {
+            "emotion": "Neutral",
+            "confidence": 0.5,
+            "engagement_score": ENGAGEMENT_SCORES["Neutral"],
+            "focus_score": 0.5,
+            "engine": "vit-fallback",
+        }
 
 
 def _analyze_emotion_opencv(image_bytes: bytes):

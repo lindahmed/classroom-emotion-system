@@ -136,6 +136,12 @@ async def lifespan(app: FastAPI):
         _configure_logging()
         if os.getenv("SKIP_DB_INIT", "false").lower() not in {"1", "true", "yes"}:
             init_db()
+        if analyze_emotion is not None:
+            try:
+                from .emotion_engine import warmup_emotion_model
+                warmup_emotion_model()
+            except Exception as exc:
+                logger.warning("Emotion model warmup skipped: %s", exc)
         yield
     finally:
         close_db()
@@ -323,7 +329,7 @@ async def analyze_frame(
             "left_room": record["left_room"],
             "absence_duration_minutes": int(record["absence_duration_minutes"] or 0),
             "source_type": "live_camera",
-            "model_name": "EduPulse_v1.0",
+            "model_name": f"EduPulse_v1.0-{emotion_data.get('engine', 'unknown')}",
         }
     )
     record["db_record_id"] = db_record_id

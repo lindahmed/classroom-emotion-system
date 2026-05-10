@@ -12,3 +12,5 @@ pydantic==2.12.4
 email-validator==2.3.0
 pytest==9.0.3
 python-dotenv==1.0.1
+transformers>=4.36.0
+torch>=2.0.0
