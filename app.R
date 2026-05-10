@@ -2359,17 +2359,38 @@ server <- function(input, output, session) {
   })
   
   # ── Attendance ────────────────────────────────────────────────────────────
+  # One row per student × lecture (emotion rows are many per session); show mean engagement
+  # and confusion as the share of readings where emotion == "Confused".
   output$table_attendance <- renderDT({
     d <- filtered_data_reactive()
-    if (nrow(d)>0) {
-      att <- d %>%
-        select(student_id,student_name,lecture_id,attendance_status,
-               is_present,left_room,absence_duration_minutes,focus_score) %>%
-        distinct()
-      datatable(att, options=list(pageLength=10,scrollX=TRUE), rownames=FALSE, selection="none")
-    } else {
-      datatable(data.frame(Message="No data."), options=list(dom="t"), rownames=FALSE)
+    need <- c("student_id", "student_name", "lecture_id", "emotion", "engagement_score")
+    if (nrow(d) < 1L || !all(need %in% names(d))) {
+      return(datatable(data.frame(Message = "No data."), options = list(dom = "t"), rownames = FALSE))
     }
+    d2 <- d
+    if (!"attendance_status" %in% names(d2)) d2$attendance_status <- NA_character_
+    if (!"is_present" %in% names(d2)) d2$is_present <- NA
+    if (!"left_room" %in% names(d2)) d2$left_room <- NA
+    if ("timestamp" %in% names(d2)) {
+      d2 <- d2 %>% dplyr::arrange(.data$student_id, .data$lecture_id, dplyr::desc(.data$timestamp))
+    }
+    att <- d2 %>%
+      dplyr::group_by(.data$student_id, .data$student_name, .data$lecture_id) %>%
+      dplyr::summarise(
+        .groups = "drop",
+        Samples = dplyr::n(),
+        `Avg engagement` = round(mean(as.numeric(.data$engagement_score), na.rm = TRUE), 3),
+        `Pct readings confused` = round(
+          100 * mean(tolower(trimws(as.character(.data$emotion))) == "confused", na.rm = TRUE),
+          1
+        ),
+        `Attendance (latest)` = dplyr::first(trimws(as.character(.data$attendance_status))),
+        `Present (any sample)` = any(as.logical(.data$is_present), na.rm = TRUE),
+        `Left room (any sample)` = any(as.logical(.data$left_room), na.rm = TRUE)
+      )
+    disp <- att %>%
+      dplyr::rename(`Student ID` = .data$student_id, Student = .data$student_name, Lecture = .data$lecture_id)
+    datatable(disp, options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE, selection = "none")
   })
   
   # ── Settings ──────────────────────────────────────────────────────────────
