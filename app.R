@@ -1839,19 +1839,22 @@ server <- function(input, output, session) {
     }
   })
   
-  # ── Reactive: data filtered by lecture + group ────────────────────────────
+  # ── Reactive: data filtered by week + lecture + group ────────────────────
   filtered_data_reactive <- reactive({
     if (!is_logged_in() || is.null(app_data$filtered_data)) return(data.frame())
     data <- app_data$filtered_data
-    
+
+    if ("academic_week" %in% names(data))
+      data <- data %>% filter(academic_week == app_data$selected_week)
+
     lid <- app_data$selected_lecture_id
     if (!is.null(lid) && nchar(lid) > 0 && lid != "All")
       data <- data %>% filter(lecture_id == lid)
-    
+
     grp <- input$filter_group
     if (!is.null(grp) && grp != "All")
       data <- data %>% filter(group_id == grp)
-    
+
     data
   })
 
