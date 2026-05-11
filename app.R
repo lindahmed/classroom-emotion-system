@@ -68,7 +68,8 @@ app_data <- reactiveValues(
   start_session_request = NULL,
   live_face_response = NULL,
   live_attendance = NULL,
-  session_mode = "full"
+  session_mode = "full",
+  report_llm = NULL
 )
 
 # Authenticate user via PostgreSQL (email + password)
@@ -966,6 +967,7 @@ ui <- fluidPage(
             id = "panel_report",
             h1(class = "section-title", "📄 Student Emotion Report"),
             p(class = "section-sub", "Per-student emotion analysis for the selected lecture"),
+            uiOutput("report_select_lecture_hint"),
             
             div(class = "ep-card mb-3",
                 div(class = "ep-card-header", "Lecture Context"),
@@ -986,6 +988,17 @@ ui <- fluidPage(
               column(2, div(class = "metric-card", div(class="metric-icon","💡"), div(class="metric-value", textOutput("report_avg_engagement")),   div(class="metric-label","Avg Engagement"))),
               column(2, div(class = "metric-card", div(class="metric-icon","🎯"), div(class="metric-value", textOutput("report_avg_focus")),        div(class="metric-label","Avg Focus"))),
               column(2, div(class = "metric-card", div(class="metric-icon","😊"), div(class="metric-value", textOutput("report_dominant_emotion")), div(class="metric-label","Dominant Emotion")))
+            ),
+
+            div(class = "ep-card mb-3",
+              div(class = "ep-card-header", "🧠 AI lecture summary"),
+              uiOutput("report_llm_intro"),
+              fluidRow(
+                column(12,
+                  uiOutput("report_llm_action_row"),
+                  uiOutput("report_llm_result")
+                )
+              )
             ),
             
             div(class = "ep-card",
@@ -1297,7 +1310,18 @@ server <- function(input, output, session) {
         app_data$semester_weeks <- load_semester_weeks_csv()
         showNotification("Database unavailable — using CSV data.", type = "warning", duration = 5)
       })
-      
+
+      # Dashboard defaults to ACTIVE week in code, but seeded DB data is often weeks 1–12 only —
+      # pick the latest week that actually appears in the filtered emotion frame so charts/tables aren't blank.
+      fd_w <- app_data$filtered_data
+      if (!is.null(fd_w) && nrow(fd_w) > 0L && "academic_week" %in% names(fd_w)) {
+        uw <- unique(suppressWarnings(as.integer(fd_w$academic_week)))
+        uw <- uw[is.finite(uw) & uw >= 1L & uw < EDUPULSE_FIRST_LOCKED_WEEK]
+        if (length(uw)) {
+          app_data$selected_week <- as.integer(max(uw))
+        }
+      }
+
       # Populate selects
       updateSelectInput(session, "filter_group",
                         choices = c("All", get_groups_from_data(app_data$filtered_data)))
@@ -1319,7 +1343,7 @@ server <- function(input, output, session) {
       shinyjs::hide("login_error")
       
       show_panel("dashboard")
-      update_week_buttons(EDUPULSE_ACTIVE_ACADEMIC_WEEK)
+      update_week_buttons(app_data$selected_week)
       session$sendCustomMessage("highlightSb", list(panel = "dashboard"))
 
       removeNotification("login_loading")
@@ -1596,6 +1620,7 @@ server <- function(input, output, session) {
     app_data$selected_lecture_id <- NULL
     app_data$live_face_response  <- NULL
     app_data$live_attendance     <- NULL
+    app_data$report_llm          <- NULL
     
     for (p in ALL_PANELS) shinyjs::hide(paste0("panel_", p))
     shinyjs::show("login_overlay")
@@ -1877,6 +1902,17 @@ server <- function(input, output, session) {
     viz <- visualization_emotion_data()
     if (is.null(viz)) return(data.frame())
     dplyr::filter(viz, academic_week == app_data$selected_week)
+  })
+
+  selected_week_lecture_data <- reactive({
+    d <- dashboard_week_slice()
+    if (is.null(d) || nrow(d) == 0) return(data.frame())
+    lid <- app_data$selected_lecture_id
+    if (!is.null(lid) && nzchar(as.character(lid)) && lid != "All") {
+      selected <- d %>% filter(lecture_id == lid)
+      if (nrow(selected) > 0) return(selected)
+    }
+    d
   })
   
   # ── Reactive: weekly schedule ─────────────────────────────────────────────
@@ -2176,14 +2212,14 @@ server <- function(input, output, session) {
     renderPlot({ expr }, bg = bg)
   }
   
-  output$chart_timeline          <- renderPlot({ render_engagement_timeline(filtered_data_reactive()) },             bg="#0b1220")
-  output$chart_emotions          <- renderPlot({ render_emotion_distribution(filtered_data_reactive()) },            bg="#0b1220")
-  output$chart_confusion_timeline<- renderPlot({ render_confusion_timeline(filtered_data_reactive()) },             bg="#0b1220")
-  output$chart_boredom_timeline  <- renderPlot({ render_boredom_timeline(filtered_data_reactive()) },               bg="#0b1220")
-  output$chart_dominant_emotion  <- renderPlot({ render_dominant_emotion_by_student(filtered_data_reactive()) },    bg="#0b1220")
-  output$chart_engagement_ranking<- renderPlot({ render_student_engagement_ranking(filtered_data_reactive(),10) },  bg="#0b1220")
-  output$chart_confusion_ranking <- renderPlot({ render_confusion_rate_by_student(filtered_data_reactive(),10) },   bg="#0b1220")
-  output$chart_engagement_focus  <- renderPlot({ render_engagement_vs_focus_scatter(filtered_data_reactive()) },    bg="#0b1220")
+  output$chart_timeline          <- renderPlot({ render_engagement_timeline(selected_week_lecture_data()) },             bg="#0b1220")
+  output$chart_emotions          <- renderPlot({ render_emotion_distribution(selected_week_lecture_data()) },            bg="#0b1220")
+  output$chart_confusion_timeline<- renderPlot({ render_confusion_timeline(selected_week_lecture_data()) },             bg="#0b1220")
+  output$chart_boredom_timeline  <- renderPlot({ render_boredom_timeline(selected_week_lecture_data()) },               bg="#0b1220")
+  output$chart_dominant_emotion  <- renderPlot({ render_dominant_emotion_by_student(selected_week_lecture_data()) },    bg="#0b1220")
+  output$chart_engagement_ranking<- renderPlot({ render_student_engagement_ranking(selected_week_lecture_data(),10) },  bg="#0b1220")
+  output$chart_confusion_ranking <- renderPlot({ render_confusion_rate_by_student(selected_week_lecture_data(),10) },   bg="#0b1220")
+  output$chart_engagement_focus  <- renderPlot({ render_engagement_vs_focus_scatter(selected_week_lecture_data()) },    bg="#0b1220")
   output$chart_semester_engagement<-renderPlot({ render_semester_engagement_trend(visualization_emotion_data()) },        bg="#0b1220")
   output$chart_semester_confusion <- renderPlot({ render_semester_confusion_trend(visualization_emotion_data()) },        bg="#0b1220")
   output$chart_course_comparison  <- renderPlot({ render_course_engagement_comparison(visualization_emotion_data()) },    bg="#0b1220")
@@ -2243,49 +2279,107 @@ server <- function(input, output, session) {
   })
   
   # ── Report ────────────────────────────────────────────────────────────────
+  output$report_select_lecture_hint <- renderUI({
+    if (!is_logged_in()) return(NULL)
+    lid <- app_data$selected_lecture_id
+    if (!is.null(lid) && nzchar(as.character(lid))) return(NULL)
+    tags$div(
+      class = "alert alert-warning mb-3",
+      style = "border-radius:12px;",
+      tags$strong("No lecture loaded yet."),
+      " Go to the ",
+      tags$strong("Dashboard"),
+      ", use the week schedule table, and click ",
+      tags$strong("▶ View"),
+      " (or start a session) on a row — that sets the active lecture for Reports, Live Monitor, and the AI summary."
+    )
+  })
+
+  report_data_reactive <- reactive({
+    lid <- app_data$selected_lecture_id
+    if (is.null(lid) || !nzchar(as.character(lid)) || lid == "All") return(data.frame())
+
+    viz <- visualization_emotion_data()
+    if (!is.null(viz) && nrow(viz) > 0) {
+      d <- viz %>% filter(lecture_id == lid)
+      if (nrow(d) > 0) return(d)
+    }
+
+    if (!is.null(app_data$all_data) && nrow(app_data$all_data) > 0) {
+      return(app_data$all_data %>% filter(lecture_id == lid))
+    }
+    data.frame()
+  })
+
+  report_lecture_info <- reactive({
+    lid <- app_data$selected_lecture_id
+    if (is.null(lid) || !nzchar(as.character(lid)) || lid == "All") return(NULL)
+
+    if (!is.null(app_data$lecture_schedule) && nrow(app_data$lecture_schedule) > 0) {
+      s <- app_data$lecture_schedule %>% filter(lecture_id == lid)
+      if (nrow(s) > 0) return(s[1, , drop = FALSE])
+    }
+
+    d <- report_data_reactive()
+    if (nrow(d) > 0) return(d[1, , drop = FALSE])
+    NULL
+  })
+
+  safe_report_value <- function(s, name, default = "0", digits = NULL) {
+    if (is.null(s) || length(s) == 0L || is.null(s[[name]])) return(default)
+    val <- s[[name]]
+    if (length(val) == 0L || all(is.na(val))) return(default)
+    if (!is.null(digits)) {
+      num <- suppressWarnings(as.numeric(val[1]))
+      if (is.na(num) || !is.finite(num)) return(default)
+      return(as.character(round(num, digits)))
+    }
+    as.character(val[1])
+  }
+
   output$report_lecture_name <- renderText({
     lid <- app_data$selected_lecture_id
     if (is.null(lid)||lid=="") return("No lecture selected")
-    d <- app_data$all_data %>% filter(lecture_id==lid)
-    if (nrow(d)==0) "Unknown" else d$lecture_name[1]
+    info <- report_lecture_info()
+    if (is.null(info) || !("lecture_name" %in% names(info))) "Unknown" else info$lecture_name[1]
   })
   output$report_course_name <- renderText({
     lid <- app_data$selected_lecture_id; if (is.null(lid)) return("")
-    d <- app_data$all_data %>% filter(lecture_id==lid)
-    if (nrow(d)==0) "" else paste0(d$course_code[1]," – ",d$course_name[1])
+    info <- report_lecture_info()
+    if (is.null(info) || !all(c("course_code", "course_name") %in% names(info))) "" else paste0(info$course_code[1]," – ",info$course_name[1])
   })
   output$report_group_name <- renderText({
     lid <- app_data$selected_lecture_id; if (is.null(lid)) return("")
-    d <- app_data$all_data %>% filter(lecture_id==lid)
-    if (nrow(d)==0) "" else d$group_name[1]
+    info <- report_lecture_info()
+    if (is.null(info) || !("group_name" %in% names(info))) "" else info$group_name[1]
   })
   output$report_lecturer_name <- renderText({
     lid <- app_data$selected_lecture_id; if (is.null(lid)) return("")
-    d <- app_data$all_data %>% filter(lecture_id==lid)
-    if (nrow(d)==0) "" else d$lecturer_name[1]
+    info <- report_lecture_info()
+    if (is.null(info) || !("lecturer_name" %in% names(info))) "" else info$lecturer_name[1]
   })
   output$report_lecture_date <- renderText({
     lid <- app_data$selected_lecture_id; if (is.null(lid)) return("")
-    s <- app_data$lecture_schedule %>% filter(lecture_id==lid)
-    if (nrow(s)==0) "" else format(as.Date(s$lecture_date[1]),"%B %d, %Y")
+    info <- report_lecture_info()
+    if (is.null(info) || !("lecture_date" %in% names(info))) "" else format(as.Date(info$lecture_date[1]),"%B %d, %Y")
   })
   output$report_lecture_time <- renderText({
     lid <- app_data$selected_lecture_id; if (is.null(lid)) return("")
-    s <- app_data$lecture_schedule %>% filter(lecture_id==lid)
-    if (nrow(s)==0) "" else paste0(s$start_time[1]," – ",s$end_time[1])
+    info <- report_lecture_info()
+    if (is.null(info) || !all(c("start_time", "end_time") %in% names(info))) "" else paste0(info$start_time[1]," – ",info$end_time[1])
   })
   
   report_summary_reactive <- reactive({
     if (is.null(app_data$selected_lecture_id)) return(NULL)
-    calculate_lecture_summary(app_data$all_data, app_data$selected_lecture_id)
+    calculate_lecture_summary(report_data_reactive(), app_data$selected_lecture_id)
   })
   
-  output$report_total_students   <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else s$total_students })
-  output$report_present_students <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else round(s$present_students,0) })
-  output$report_absent_students  <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else s$absent_students })
-  output$report_avg_engagement   <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else round(s$avg_engagement,3) })
-  output$report_avg_focus        <- renderText({ s<-report_summary_reactive(); if(is.null(s))"0" else round(s$avg_focus,3) })
-  output$report_dominant_emotion <- renderText({ s<-report_summary_reactive(); if(is.null(s))"N/A" else s$dominant_emotion })
+  output$report_total_students   <- renderText({ safe_report_value(report_summary_reactive(), "total_students", "0", 0) })
+  output$report_present_students <- renderText({ safe_report_value(report_summary_reactive(), "present_students", "0", 0) })
+  output$report_absent_students  <- renderText({ safe_report_value(report_summary_reactive(), "absent_students", "0", 0) })
+  output$report_avg_engagement   <- renderText({ safe_report_value(report_summary_reactive(), "avg_engagement", "0", 3) })
+  output$report_avg_focus        <- renderText({ safe_report_value(report_summary_reactive(), "avg_focus", "0", 3) })
+  output$report_dominant_emotion <- renderText({ safe_report_value(report_summary_reactive(), "dominant_emotion", "N/A") })
   
   output$table_report <- renderDT({
     lid <- app_data$selected_lecture_id
@@ -2293,7 +2387,7 @@ server <- function(input, output, session) {
       return(datatable(data.frame(Message="Select a lecture to view the student report."),
                        options=list(dom="t"), rownames=FALSE))
     }
-    report <- calculate_lecture_report(app_data$all_data, lid)
+    report <- calculate_lecture_report(report_data_reactive(), lid)
     if (nrow(report)==0) {
       return(datatable(data.frame(Message="No data for this lecture."),
                        options=list(dom="t"), rownames=FALSE))
@@ -2305,6 +2399,140 @@ server <- function(input, output, session) {
       confusion_rate, boredom_rate, first_emotion, last_emotion, risk_flag
     )
     datatable(disp, options=list(pageLength=15,scrollX=TRUE), rownames=FALSE, selection="none")
+  })
+
+  observe({
+    app_data$selected_lecture_id
+    app_data$report_llm <- NULL
+  })
+
+  output$report_llm_intro <- renderUI({
+    tags$p(
+      style = "color: var(--muted); font-size:0.85rem; margin-bottom:0.65rem;",
+      "Powered by FastAPI ",
+      tags$code(style = "color: var(--accent-strong);", "POST /summarize-report-context"),
+      ". Uses the HuggingFace summarization pipeline on the backend; the first run may download a model."
+    )
+  })
+
+  output$report_llm_action_row <- renderUI({
+    if (!is_logged_in()) return(NULL)
+    role <- tolower(trimws(paste(app_data$user_role %||% "", collapse = "")))
+    if (role == "student") {
+      return(tags$p(class = "small", style = "color:#94a3b8;", "AI summaries are enabled for lecturers and admins."))
+    }
+    tagList(
+      actionButton("report_llm_summarize_btn", "✨ Summarize with LLM",
+                   class = "btn btn-sm btn-primary mb-2"),
+      tags$p(class = "small", style = "color:#94a3b8; margin:0 0 0.5rem 0;",
+             "Requires a lecture above and the FastAPI backend with LLM dependencies running.")
+    )
+  })
+
+  observeEvent(input$report_llm_summarize_btn, {
+    req(is_logged_in())
+    if (tolower(trimws(paste(app_data$user_role %||% "", collapse = ""))) == "student") {
+      return(invisible(NULL))
+    }
+
+    lid <- app_data$selected_lecture_id
+    if (is.null(lid) || !nzchar(lid)) {
+      showNotification("Select a lecture from the Dashboard schedule first.", type = "warning", duration = 4)
+      return(invisible(NULL))
+    }
+    tok <- app_data$api_token
+    if (is.null(tok) || !nzchar(tok)) {
+      showNotification("Not authenticated with the API.", type = "warning", duration = 4)
+      return(invisible(NULL))
+    }
+
+    ctx <- build_lecture_report_context_for_llm(report_data_reactive(), lid)
+    if (!nzchar(ctx)) {
+      showNotification("No report data for this lecture yet.", type = "warning", duration = 4)
+      return(invisible(NULL))
+    }
+
+    shinyjs::disable("report_llm_summarize_btn")
+    res <- tryCatch(
+      call_api(
+        "/summarize-report-context",
+        method = "POST",
+        body = list(
+          lecture_id = lid,
+          context_text = substr(ctx, 1, 12000L),
+          max_length = 150L,
+          min_length = 50L
+        ),
+        token = tok,
+        timeout_sec = 180L
+      ),
+      error = function(e) list(error = TRUE, status = 0L, body = conditionMessage(e))
+    )
+    shinyjs::enable("report_llm_summarize_btn")
+
+    if (isTRUE(res$error)) {
+      body_txt <- tryCatch({
+        p <- fromJSON(res$body, simplifyVector = TRUE)
+        if (!is.null(p$detail)) paste(as.character(p$detail), collapse = " ") else as.character(res$body)
+      }, error = function(e) as.character(res$body %||% "Request failed"))
+      app_data$report_llm <- list(error = body_txt)
+      showNotification(body_txt, type = "error", duration = 10)
+      return(invisible(NULL))
+    }
+
+    summ <- res$summary %||% ""
+    if (!nzchar(trimws(summ))) summ <- "(Empty response from model.)"
+    app_data$report_llm <- list(
+      summary = summ,
+      insights = res$insights,
+      metrics = res$metrics
+    )
+    showNotification("LLM summary generated.", type = "message", duration = 2)
+  })
+
+  output$report_llm_result <- renderUI({
+    z <- app_data$report_llm
+    if (is.null(z)) {
+      return(tags$div(class = "small", style = "color:#94a3b8;", "Click the button above to generate an AI summary."))
+    }
+    if (!is.null(z$error)) {
+      return(tags$div(
+        class = "alert alert-warning",
+        tags$strong("Summary unavailable."),
+        tags$br(),
+        htmltools::htmlEscape(paste(z$error, collapse = ""))
+      ))
+    }
+
+    txt <- trimws(paste(z$summary %||% "", collapse = "\n"))
+
+    insights <- z$insights
+    ins_ui <- NULL
+    ch <- tryCatch({
+      v <- unlist(insights, use.names = FALSE)
+      v <- trimws(as.character(v))
+      v[nzchar(v)]
+    }, error = function(e) character(0))
+    if (length(ch) > 0) {
+      ins_ui <- tagList(
+        tags$hr(class = "ep-hr"),
+        tags$div(tags$strong("Insights")),
+        tags$ul(class = "small", lapply(ch, function(x) tags$li(htmltools::htmlEscape(x))))
+      )
+    }
+
+    tagList(
+      tags$div(
+        class = "ep-card mt-2",
+        style = "border:1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 1rem;",
+        tags$strong("Executive summary"),
+        tags$hr(class = "ep-hr", style="margin-top:6px;margin-bottom:8px"),
+        tags$div(style = "white-space:pre-wrap; line-height:1.55; font-size:0.92rem;",
+                 htmltools::htmlEscape(txt)),
+        tags$p(class = "small", style = "margin:0.65rem 0 0; color:#64748b;", "Select the text above to copy it.")
+      ),
+      ins_ui
+    )
   })
   
   # ── Clustering ────────────────────────────────────────────────────────────
