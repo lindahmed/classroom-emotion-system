@@ -381,7 +381,7 @@ def _sync_lecture_schedule_csv() -> None:
         "c.course_id, c.course_code, c.course_name, "
         "a.group_id, sg.group_code, sg.group_name, "
         "lec.lecturer_id, lec.lecturer_code AS lecturer_name, "
-        "r.room_name AS room, "
+        "COALESCE(r.room_number::text, '') AS room, "
         "0 AS expected_students, l.status::text AS status, "
         "l.lecture_id AS lecture_db_id, lec.lecturer_id AS lecturer_db_id "
         "FROM lectures l "

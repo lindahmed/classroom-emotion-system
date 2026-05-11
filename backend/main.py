@@ -33,8 +33,19 @@ except Exception:
     analyze_emotion = None
     analyze_emotion_crop = None
 
-
 logger = logging.getLogger(__name__)
+
+try:
+    from .llm_summarizer import (
+        generate_lecture_summary,
+        summarize_context_text,
+        summarize_from_csv_file,
+    )
+except Exception as e:
+    logger.warning("LLM summarizer not available: %s", e)
+    generate_lecture_summary = None
+    summarize_context_text = None
+    summarize_from_csv_file = None
 
 
 def _cors_config():
@@ -129,6 +140,27 @@ class PasswordResetResponse(BaseModel):
 class ChangePasswordRequest(BaseModel):
     old_password: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=8)
+
+
+class LectureSummaryRequest(BaseModel):
+    lecture_id: str
+    csv_path: Optional[str] = None
+    max_length: int = 150
+    min_length: int = 50
+
+
+class LectureSummaryResponse(BaseModel):
+    lecture_id: str
+    summary: str
+    insights: List[str]
+    metrics: Dict
+
+
+class ReportSummaryFromContextRequest(BaseModel):
+    lecture_id: str = ""
+    context_text: str = Field(..., min_length=1)
+    max_length: int = 150
+    min_length: int = 50
 
 
 @asynccontextmanager
@@ -440,3 +472,102 @@ def attendance_snapshot(
         return get_attendance(lecture_id)
     except AttendanceServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+
+
+@app.post("/summarize-report-context", response_model=LectureSummaryResponse, tags=["analytics"])
+def summarize_report_context_endpoint(
+    body: ReportSummaryFromContextRequest,
+    current_user: Dict = Depends(require_roles("admin", "lecturer")),
+):
+    """Summarize the Reports panel narrative (built in Shiny) via HuggingFace."""
+    if summarize_context_text is None:
+        raise HTTPException(
+            status_code=503,
+            detail="LLM summarizer not available. Install transformers + torch and related deps.",
+        )
+    try:
+        result = summarize_context_text(
+            lecture_id=body.lecture_id,
+            context=body.context_text,
+            max_length=body.max_length,
+            min_length=body.min_length,
+        )
+        return LectureSummaryResponse(
+            lecture_id=result.get("lecture_id", body.lecture_id or ""),
+            summary=result.get("summary", ""),
+            insights=list(result.get("insights") or []),
+            metrics=dict(result.get("metrics") or {}),
+        )
+    except Exception as exc:
+        logger.error("summarize-report-context failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Summarization error: {exc}") from exc
+
+
+@app.post("/summarize-lecture/{lecture_id}", response_model=LectureSummaryResponse, tags=["analytics"])
+def summarize_lecture_endpoint(
+    lecture_id: str,
+    request_data: Optional[LectureSummaryRequest] = None,
+    current_user: Dict = Depends(require_roles("admin", "lecturer")),
+):
+    """
+    Summarize a lecture's emotion & attendance data using HuggingFace LLM.
+    
+    If csv_path is not provided, attempts to load from standard location:
+    data/emotion_records.csv
+    """
+    if generate_lecture_summary is None:
+        raise HTTPException(
+            status_code=503,
+            detail="LLM summarizer not available. Install backend dependencies first.",
+        )
+    
+    csv_path = None
+    if request_data and request_data.csv_path:
+        csv_path = request_data.csv_path
+    else:
+        # Try standard paths
+        possible_paths = [
+            os.path.join("data", "emotion_records.csv"),
+            os.path.join("data", f"{lecture_id}_records.csv"),
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                csv_path = path
+                break
+    
+    if not csv_path or not os.path.exists(csv_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"CSV report not found for lecture {lecture_id}. Provide csv_path in request."
+        )
+    
+    try:
+        import pandas as pd
+        df = pd.read_csv(csv_path)
+        
+        # Filter for this lecture if emotion_records.csv contains multiple lectures
+        if "lecture_id" in df.columns:
+            df = df[df["lecture_id"] == lecture_id]
+        
+        if df.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No records found for lecture {lecture_id} in {csv_path}"
+            )
+        
+        max_len = request_data.max_length if request_data else 150
+        min_len = request_data.min_length if request_data else 50
+        
+        result = generate_lecture_summary(
+            lecture_id=lecture_id,
+            csv_data=df,
+            max_length=max_len,
+            min_length=min_len,
+        )
+        return result
+    
+    except pd.errors.ParserError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid CSV file: {exc}") from exc
+    except Exception as exc:
+        logger.error(f"Summarization failed: {exc}")
+        raise HTTPException(status_code=500, detail=f"Summarization error: {exc}") from exc
